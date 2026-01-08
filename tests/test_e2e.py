@@ -5,6 +5,7 @@ These tests verify:
 1. Anonymization with replacements from config replaces all PII
 2. All tests are data-driven - no hardcoded assumptions about content
 """
+import re
 import pytest
 from pathlib import Path
 
@@ -25,15 +26,34 @@ def get_replacements_from_config() -> dict[str, str]:
 
 
 def apply_replacements(text: str, replacements: dict[str, str]) -> str:
-    """Apply find-and-replace using replacements dict."""
+    """Apply find-and-replace using replacements dict with word boundary support."""
     # Sort by length descending to replace longer strings first
     sorted_items = sorted(replacements.items(), key=lambda x: len(x[0]), reverse=True)
 
     result = text
     for original, replacement in sorted_items:
-        result = result.replace(original, replacement)
+        # Check if the term is purely Hebrew (needs word boundaries to avoid breaking words)
+        is_hebrew_only = all('\u0590' <= c <= '\u05FF' or c in "'" for c in original)
+
+        if is_hebrew_only:
+            # For Hebrew words: don't match if surrounded by Hebrew letters
+            pattern = r'(?<![א-ת])' + re.escape(original) + r'(?![א-ת])'
+            result = re.sub(pattern, replacement, result)
+        else:
+            # For numbers, emails, mixed content: simple replacement
+            result = result.replace(original, replacement)
 
     return result
+
+
+def has_standalone_match(text: str, term: str) -> bool:
+    """Check if term appears as standalone (not part of larger Hebrew word)."""
+    is_hebrew_only = all('\u0590' <= c <= '\u05FF' or c in "'" for c in term)
+    if is_hebrew_only:
+        pattern = r'(?<![א-ת])' + re.escape(term) + r'(?![א-ת])'
+        return bool(re.search(pattern, text))
+    else:
+        return term in text
 
 
 class TestAnonymizationE2E:
@@ -66,16 +86,16 @@ class TestAnonymizationE2E:
         # Apply replacements
         anonymized_text = apply_replacements(original_text, replacements)
 
-        # Verify: original PII values should NOT be in output (for significant values)
+        # Verify: original PII values should NOT appear as standalone in output
         for original, replacement in replacements.items():
             # Skip short values that might be substrings of other words
             if len(original) >= 4:
-                assert original not in anonymized_text, \
+                assert not has_standalone_match(anonymized_text, original), \
                     f"Original PII '{original}' should be replaced with '{replacement}'"
 
         # Verify: replacement values SHOULD be in output (for values that existed in original)
         for original, replacement in replacements.items():
-            if original in original_text and len(replacement) >= 4:
+            if has_standalone_match(original_text, original) and len(replacement) >= 4:
                 assert replacement in anonymized_text, \
                     f"Replacement '{replacement}' should appear in anonymized text"
 
@@ -100,16 +120,16 @@ class TestAnonymizationE2E:
         # Apply replacements
         anonymized_text = apply_replacements(original_text, replacements)
 
-        # Verify: original PII values should NOT be in output (for significant values)
+        # Verify: original PII values should NOT appear as standalone in output
         for original, replacement in replacements.items():
             # Skip short values that might be substrings of other words
             if len(original) >= 4:
-                assert original not in anonymized_text, \
+                assert not has_standalone_match(anonymized_text, original), \
                     f"Original PII '{original}' should be replaced with '{replacement}'"
 
         # Verify: replacement values SHOULD be in output (for values that existed in original)
         for original, replacement in replacements.items():
-            if original in original_text and len(replacement) >= 4:
+            if has_standalone_match(original_text, original) and len(replacement) >= 4:
                 assert replacement in anonymized_text, \
                     f"Replacement '{replacement}' should appear in anonymized text"
 
