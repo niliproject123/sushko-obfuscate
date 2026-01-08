@@ -1,0 +1,115 @@
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.settings-section {
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.settings-section h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.settings-section .description {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.setting-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.setting-field label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.setting-field input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.setting-field input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.placeholder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.placeholder-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.placeholder-key {
+  min-width: 100px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.placeholder-row input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.placeholder-row input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.btn-save {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.btn-save:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
