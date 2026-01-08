@@ -43,6 +43,7 @@ class ServerConfig(BaseModel):
         "ADDRESS": "[ADDRESS]",
         "DEFAULT": "[REDACTED]",
     })
+    default_replacements: dict[str, str] = Field(default_factory=dict)  # Global default replacements
 
 
 class RequestConfig(BaseModel):
@@ -59,5 +60,5 @@ class MergedConfig(BaseModel):
     replacement_pools: ReplacementPoolsConfig
     ocr: OCRConfig
     placeholders: dict[str, str]
-    user_replacements: dict[str, str]
+    user_replacements: dict[str, str]  # Merged: default_replacements + request user_replacements
     force_ocr: bool

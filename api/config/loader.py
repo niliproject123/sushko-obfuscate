@@ -62,12 +62,16 @@ def merge_config(
     # Determine OCR setting
     force_ocr = request_config.force_ocr
 
+    # Merge default_replacements with request user_replacements
+    # Request overrides take precedence
+    merged_replacements = {**server_config.default_replacements, **request_config.user_replacements}
+
     return MergedConfig(
         patterns=all_patterns,
         replacement_pools=server_config.replacement_pools,
         ocr=server_config.ocr,
         placeholders=server_config.placeholders,
-        user_replacements=request_config.user_replacements,
+        user_replacements=merged_replacements,
         force_ocr=force_ocr,
     )
 
