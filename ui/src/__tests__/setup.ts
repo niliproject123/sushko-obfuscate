@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 // Path to shared test resources (same as backend tests)
-export const RESOURCES_PATH = join(__dirname, '../../../tests/resources');
+export const RESOURCES_PATH = join(__dirname, '../../../api/tests/resources');
 
 // API base URL - assumes backend running on port 8000
 export const API_BASE = 'http://localhost:8000/api';
