@@ -1,0 +1,159 @@
+┌─────────────────────────────────────────────────────────────┐
+│                    EXTRACTION PHASE                         │
+└─────────────────────────────────────────────────────────────┘
+
+1. DETECT PDF TYPE
+   ├─ IF pdf.has_text_layer() → Use PyMuPDF (fitz)
+   └─ IF pdf.is_image_based() → Use OCR (EasyOCR) or read from context
+
+2. EXTRACT TEXT
+   FOR each page IN pdf:
+       text = page.get_text()
+       tables = page.extract_tables()  // pdfplumber
+       APPEND to full_text
+
+3. HANDLE HEBREW RTL
+   // Text is stored correctly, display may appear reversed
+   // No transformation needed for storage/processing
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                 PII DETECTION RULES                         │
+└─────────────────────────────────────────────────────────────┘
+
+PII_PATTERNS = {
+    
+    // Israeli ID - 9 digits
+    "ID": regex(r'\b\d{9}\b')
+    
+    // Phone numbers
+    "PHONE": regex(r'0\d{1,2}[-־]?\d{7}')
+    
+    // Names after Hebrew labels
+    "NAME_HEBREW": regex(r'(שם פרטי|שם משפחה|שם מלא)\s*[:\-]?\s*([א-ת]+)')
+    
+    // Names after English labels  
+    "NAME_ENGLISH": regex(r'(Name|First Name|Last Name)\s*[:\-]?\s*(\w+)')
+    
+    // Email
+    "EMAIL": regex(r'[\w\.-]+@[\w\.-]+\.\w+')
+    
+    // Address patterns
+    "ADDRESS": regex(r'(כתובת|ישוב|רחוב)\s*[:\-]?\s*([א-ת\s\d]+)')
+    
+    // Case/File numbers
+    "CASE_NUMBER": regex(r'(מספר מקרה|מס׳ תיק)\s*[:\-]?\s*(\d+)')
+    
+    // Medical license numbers
+    "LICENSE": regex(r'מ\.ר\.?\s*(\d+)')
+}
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                 REPLACEMENT STRATEGY                        │
+└─────────────────────────────────────────────────────────────┘
+
+FUNCTION anonymize(text, replacements_map):
+    
+    // 1. PRIORITY ORDER - longest matches first
+    SORT replacements_map BY key.length DESC
+    
+    // 2. EXACT MATCH REPLACEMENT
+    FOR (original, fake) IN replacements_map:
+        text = text.replace(original, fake)
+    
+    // 3. PATTERN-BASED REPLACEMENT (fallback)
+    FOR pattern IN PII_PATTERNS:
+        matches = pattern.find_all(text)
+        FOR match IN matches:
+            IF match NOT IN replacements_map:
+                text = text.replace(match, generate_placeholder(pattern.type))
+    
+    RETURN text
+
+
+┌─────────────────────────────────────────────────────────────┐
+│              REPLACEMENT CATEGORIES                         │
+└─────────────────────────────────────────────────────────────┘
+
+REPLACE = {
+    // ALWAYS REPLACE
+    "patient_name"      → fake_hebrew_name()
+    "patient_id"        → fake_9_digit_id()
+    "patient_phone"     → "050-1234567"
+    "patient_address"   → fake_city_address()
+    "patient_email"     → "user@example.com"
+    "case_number"       → random_8_digits()
+    "bank_account"      → random_7_digits()
+    
+    // REPLACE IF IDENTIFIABLE
+    "staff_names"       → fake_hebrew_name()
+    "license_numbers"   → fake_5_digit()
+    
+    // PRESERVE (don't replace)
+    "medical_codes"     → KEEP  // ICD, procedure codes
+    "dates"             → KEEP  // treatment dates
+    "medications"       → KEEP  // drug names, dosages
+    "diagnoses"         → KEEP  // medical conditions
+    "hospital_name"     → KEEP  // institution names (public)
+    "phone_hotlines"    → KEEP  // public service numbers
+}
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                  IMPLEMENTATION                             │
+└─────────────────────────────────────────────────────────────┘
+
+FUNCTION process_medical_pdf(pdf_path):
+    
+    // Step 1: Extract
+    doc = fitz.open(pdf_path)
+    text = ""
+    FOR page IN doc:
+        text += page.get_text()
+    
+    // Step 2: Build replacement map
+    replacements = {
+        // Patient
+        "מיכאל": "דוד",
+        "פורגאצ'": "כהן",
+        "15968548": "12345678",
+        ...
+        // Staff
+        "דר' סז'ין אנה": "דר' לוי רחל",
+        ...
+    }
+    
+    // Step 3: Apply replacements
+    anonymized = anonymize(text, replacements)
+    
+    // Step 4: Validate - ensure no PII leaked
+    FOR pattern IN PII_PATTERNS:
+        IF pattern.matches(anonymized):
+            LOG warning("Possible PII remaining")
+    
+    RETURN anonymized
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                    BEST PRACTICES                           │
+└─────────────────────────────────────────────────────────────┘
+
+1. ORDER MATTERS
+   - Replace longer strings before shorter (פורגאצ' before פורג)
+   - Replace full names before first names
+   - Replace compound IDs before partial matches
+
+2. HEBREW VARIATIONS
+   - Handle with/without geresh: סז'ין / סזין
+   - Handle reversed text in some extractions
+   - Handle both מ.ר and מ.ר. formats
+
+3. CONSISTENCY
+   - Same original → same fake (מיכאל always → דוד)
+   - Track replacements in a map for reporting
+
+4. VALIDATION
+   - After replacement, scan for remaining 9-digit numbers
+   - Check for remaining phone patterns
+   - Manual review recommended for medical documents
