@@ -1,29 +1,48 @@
+from typing import Optional
+
 from api.obfuscators.base import Obfuscator
 from api.detectors.base import PIIMatch
+from api.replacements.mapper import ReplacementMapper
 
 
 class TextObfuscator(Obfuscator):
-    """Replaces PII with placeholder text."""
+    """Replaces PII with fake values or placeholder text."""
 
-    def __init__(self, placeholder_map: dict[str, str] | None = None):
+    def __init__(
+        self,
+        mapper: Optional[ReplacementMapper] = None,
+        placeholder_map: Optional[dict[str, str]] = None,
+    ):
         """
-        Initialize with custom placeholder map.
+        Initialize with replacement mapper and/or placeholder map.
 
         Args:
-            placeholder_map: Mapping of PII types to placeholders.
+            mapper: ReplacementMapper for consistent fake value replacements
+            placeholder_map: Fallback mapping of PII types to placeholders.
                             e.g., {"NAME": "[NAME]", "ID": "[ID]"}
         """
+        self.mapper = mapper
         self.placeholder_map = placeholder_map or {
             "NAME": "[NAME]",
             "ID": "[ID]",
+            "PHONE": "[PHONE]",
+            "EMAIL": "[EMAIL]",
+            "ADDRESS": "[ADDRESS]",
             "USER_DEFINED": "[REDACTED]",
             "DEFAULT": "[REDACTED]",
         }
 
     def obfuscate(self, text: str, matches: list[PIIMatch]) -> str:
         """
-        Replace PII with placeholders.
+        Replace PII with fake values or placeholders.
         Processes matches in reverse order to maintain position accuracy.
+
+        Args:
+            text: Original text
+            matches: List of PII matches to replace
+
+        Returns:
+            Text with PII replaced
         """
         if not matches:
             return text
@@ -33,10 +52,23 @@ class TextObfuscator(Obfuscator):
 
         result = text
         for match in sorted_matches:
-            placeholder = self.placeholder_map.get(
-                match.type,
-                self.placeholder_map.get("DEFAULT", "[REDACTED]")
-            )
-            result = result[:match.start] + placeholder + result[match.end:]
+            replacement = self._get_replacement(match)
+            result = result[:match.start] + replacement + result[match.end:]
 
         return result
+
+    def _get_replacement(self, match: PIIMatch) -> str:
+        """Get replacement value for a match."""
+        # If mapper is available, use it for consistent fake values
+        if self.mapper is not None:
+            return self.mapper.get_replacement(
+                original=match.text,
+                pii_type=match.type,
+                pattern_name=match.pattern_name,
+            )
+
+        # Fallback to placeholder map
+        return self.placeholder_map.get(
+            match.type,
+            self.placeholder_map.get("DEFAULT", "[REDACTED]")
+        )

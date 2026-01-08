@@ -9,6 +9,7 @@ class PIIMatch:
     type: str       # "NAME", "ID", etc.
     start: int      # position in text
     end: int        # end position in text
+    pattern_name: str = ""  # name of pattern that matched (for pool selection)
 
 
 class Detector(ABC):

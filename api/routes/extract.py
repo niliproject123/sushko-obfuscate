@@ -1,29 +1,47 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import Response
-from pydantic import BaseModel
+"""
+PDF extraction and anonymization endpoint.
+"""
+import json
+from typing import Optional
 
-from api.config import config
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi.responses import Response
+from pydantic import BaseModel, Field
+
+from api.config import (
+    load_server_config,
+    merge_config,
+    RequestConfig,
+    MergedConfig,
+)
 from api.processors.pdf import PDFProcessor
 from api.processors.base import ProcessedPage
+from api.detectors.regex import RegexDetector
 from api.detectors.user_defined import UserDefinedDetector
 from api.detectors.base import PIIMatch
 from api.obfuscators.text import TextObfuscator
+from api.replacements.mapper import ReplacementMapper
 from api.storage.temp import storage
 
 
 router = APIRouter()
 
 
-class ObfuscationTerm(BaseModel):
-    """User-defined term to obfuscate."""
-    text: str
-    type: str = "USER_DEFINED"
-    replace_with: str | None = None
+# ============================================================================
+# Request/Response Models
+# ============================================================================
+
+class UserReplacement(BaseModel):
+    """User-defined replacement mapping."""
+    original: str
+    replacement: str
 
 
-class ExtractRequest(BaseModel):
-    """Request model for extraction with obfuscations."""
-    obfuscations: list[ObfuscationTerm] = []
+class ExtractRequestConfig(BaseModel):
+    """Per-request configuration from client."""
+    user_replacements: dict[str, str] = Field(default_factory=dict)
+    disabled_detectors: list[str] = Field(default_factory=list)
+    force_ocr: bool = False
 
 
 class PIIMatchResponse(BaseModel):
@@ -32,6 +50,8 @@ class PIIMatchResponse(BaseModel):
     type: str
     start: int
     end: int
+    pattern_name: str = ""
+    replacement: str = ""
 
 
 class PageSummary(BaseModel):
@@ -47,74 +67,96 @@ class ExtractResponse(BaseModel):
     page_count: int
     total_matches: int
     pages: list[PageSummary]
+    mappings_used: dict[str, str]  # original -> replacement
 
 
-# Processor registry by MIME type
-PROCESSORS = {
-    mime: PDFProcessor()
-    for mime in PDFProcessor.supported_mimes
-}
+# ============================================================================
+# Configuration
+# ============================================================================
+
+# Load server config at startup
+_server_config = load_server_config()
+
+# Max file size (20MB)
+MAX_FILE_SIZE = 20 * 1024 * 1024
 
 
-def get_processor(mime_type: str):
-    """Get processor for the given MIME type."""
-    processor = PROCESSORS.get(mime_type)
-    if not processor:
-        raise HTTPException(
-            status_code=415,
-            detail=f"Unsupported file type: {mime_type}"
+def get_merged_config(request_config: Optional[ExtractRequestConfig] = None) -> MergedConfig:
+    """Get merged configuration (server + request)."""
+    if request_config is None:
+        request_config_obj = RequestConfig()
+    else:
+        request_config_obj = RequestConfig(
+            user_replacements=request_config.user_replacements,
+            disabled_detectors=request_config.disabled_detectors,
+            force_ocr=request_config.force_ocr,
         )
-    return processor
+    return merge_config(_server_config, request_config_obj)
 
+
+# ============================================================================
+# Endpoints
+# ============================================================================
 
 @router.post("/extract", response_model=ExtractResponse)
 async def extract_and_obfuscate(
     file: UploadFile = File(...),
-    obfuscations: str = "[]"
+    config: str = Form(default="{}"),
 ):
     """
-    Extract text from file and obfuscate PII.
+    Extract text from PDF and obfuscate PII.
 
     Args:
-        file: The file to process (PDF supported)
-        obfuscations: JSON string of user-defined obfuscations
+        file: The PDF file to process
+        config: JSON string of ExtractRequestConfig
 
     Returns:
-        Summary of processing with file ID for download
+        Summary of processing with file ID for download and mappings used
     """
-    import json
+    # Parse config
+    try:
+        config_data = json.loads(config)
+        request_config = ExtractRequestConfig(**config_data)
+    except (json.JSONDecodeError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid config JSON: {e}")
 
-    # Validate file size
+    # Read and validate file
     content = await file.read()
-    if len(content) > config.MAX_FILE_SIZE:
+    if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413,
-            detail=f"File too large. Maximum size: {config.MAX_FILE_SIZE // 1024 // 1024}MB"
+            detail=f"File too large. Maximum size: {MAX_FILE_SIZE // 1024 // 1024}MB"
         )
 
-    # Parse obfuscations
-    try:
-        user_obfuscations = json.loads(obfuscations)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid obfuscations JSON")
+    # Get merged configuration
+    merged_config = get_merged_config(request_config)
 
-    # Get processor
-    mime_type = file.content_type or "application/pdf"
-    processor = get_processor(mime_type)
+    # Create processor with OCR config
+    processor = PDFProcessor(ocr_config=merged_config.ocr)
 
-    # Extract text
-    pages = processor.extract_text(content)
+    # Extract text from PDF
+    pages = processor.extract_text(content, force_ocr=merged_config.force_ocr)
 
-    # Set up detectors
-    user_detector = UserDefinedDetector(terms=user_obfuscations) if user_obfuscations else None
+    # Create detector from patterns
+    regex_detector = RegexDetector(patterns=merged_config.patterns)
 
-    # Set up obfuscator with custom placeholders for user-defined terms
-    placeholder_map = dict(config.PLACEHOLDERS)
-    for term in user_obfuscations:
-        if term.get("replace_with"):
-            placeholder_map[term.get("text")] = term.get("replace_with")
+    # Create user-defined detector if there are user replacements
+    user_detector = None
+    if merged_config.user_replacements:
+        user_terms = [
+            {"text": original, "type": "USER_DEFINED"}
+            for original in merged_config.user_replacements.keys()
+        ]
+        user_detector = UserDefinedDetector(terms=user_terms)
 
-    obfuscator = TextObfuscator(placeholder_map)
+    # Create replacement mapper
+    mapper = ReplacementMapper(
+        user_mappings=merged_config.user_replacements,
+        pools=merged_config.replacement_pools,
+    )
+
+    # Create obfuscator with mapper
+    obfuscator = TextObfuscator(mapper=mapper)
 
     # Process each page
     processed_pages = []
@@ -124,58 +166,60 @@ async def extract_and_obfuscate(
     for page in pages:
         all_matches: list[PIIMatch] = []
 
-        # User-defined obfuscations first (exact match)
+        # User-defined matches first (take priority)
         if user_detector:
             user_matches = user_detector.detect(page.text)
-            # For user-defined with custom replacement, use text as type
-            for match in user_matches:
-                term_config = next(
-                    (t for t in user_obfuscations if t.get("text") == match.text),
-                    None
-                )
-                if term_config and term_config.get("replace_with"):
-                    match.type = match.text  # Use text as key for custom replacement
             all_matches.extend(user_matches)
 
-        # Pattern detectors
-        for detector in config.ACTIVE_DETECTORS:
-            detector_matches = detector.detect(page.text)
-            # Filter out matches that overlap with existing matches
-            for new_match in detector_matches:
-                overlaps = any(
-                    (new_match.start < existing.end and new_match.end > existing.start)
-                    for existing in all_matches
-                )
-                if not overlaps:
-                    all_matches.append(new_match)
+        # Pattern-based detection
+        pattern_matches = regex_detector.detect(page.text)
 
-        # Obfuscate
+        # Filter out matches that overlap with existing matches
+        for new_match in pattern_matches:
+            overlaps = any(
+                (new_match.start < existing.end and new_match.end > existing.start)
+                for existing in all_matches
+            )
+            if not overlaps:
+                all_matches.append(new_match)
+
+        # Obfuscate text
         processed_text = obfuscator.obfuscate(page.text, all_matches)
 
+        # Build processed page
         processed_pages.append(ProcessedPage(
             page_number=page.page_number,
             original_text=page.text,
             processed_text=processed_text,
-            metadata=page.metadata
+            metadata=page.metadata,
         ))
+
+        # Build page summary with replacement info
+        match_responses = []
+        for match in all_matches:
+            replacement = mapper.get_replacement(
+                original=match.text,
+                pii_type=match.type,
+                pattern_name=match.pattern_name,
+            )
+            match_responses.append(PIIMatchResponse(
+                text=match.text,
+                type=match.type,
+                start=match.start,
+                end=match.end,
+                pattern_name=match.pattern_name,
+                replacement=replacement,
+            ))
 
         page_summaries.append(PageSummary(
             page_number=page.page_number,
             matches_found=len(all_matches),
-            matches=[
-                PIIMatchResponse(
-                    text=m.text,
-                    type=m.type,
-                    start=m.start,
-                    end=m.end
-                )
-                for m in all_matches
-            ]
+            matches=match_responses,
         ))
 
         total_matches += len(all_matches)
 
-    # Reassemble and save
+    # Reassemble PDF and save
     output_content = processor.reassemble(processed_pages)
     file_id = storage.save(output_content)
 
@@ -183,7 +227,8 @@ async def extract_and_obfuscate(
         file_id=file_id,
         page_count=len(pages),
         total_matches=total_matches,
-        pages=page_summaries
+        pages=page_summaries,
+        mappings_used=mapper.get_all_mappings(),
     )
 
 
@@ -198,6 +243,20 @@ async def download_file(file_id: str):
         content=content,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=processed_{file_id}.pdf"
+            "Content-Disposition": f"attachment; filename=anonymized_{file_id}.pdf"
         }
     )
+
+
+@router.post("/extract/text", response_model=ExtractResponse)
+async def extract_text_only(
+    file: UploadFile = File(...),
+    config: str = Form(default="{}"),
+):
+    """
+    Extract and anonymize text, returning text instead of PDF.
+    Useful for previewing results before generating final PDF.
+    """
+    # This is identical to extract_and_obfuscate but could return
+    # processed text directly instead of generating PDF
+    return await extract_and_obfuscate(file=file, config=config)
