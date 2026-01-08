@@ -210,6 +210,60 @@ class TestPipelineE2E:
         assert anonymized != original_text, "Text should be modified after obfuscation"
 
 
+class TestDirectComparison:
+    """
+    Direct comparison tests: original + replacements == _anonymized.txt
+
+    These are the strictest tests - output must exactly match expected files.
+    """
+
+    def test_medical_form_matches_expected(self):
+        """
+        Direct comparison: original + replacements should equal _anonymized.txt
+        """
+        original_path = RESOURCES_DIR / "medical_form_original.txt"
+        expected_path = RESOURCES_DIR / "medical_form_anonimyzed.txt"
+
+        if not original_path.exists() or not expected_path.exists():
+            pytest.skip("Test resource files not found")
+
+        with open(original_path, "r", encoding="utf-8") as f:
+            original_text = f.read()
+
+        with open(expected_path, "r", encoding="utf-8") as f:
+            expected_text = f.read()
+
+        replacements = get_replacements_from_config()
+        actual_text = apply_replacements(original_text, replacements)
+
+        # Direct comparison
+        assert actual_text == expected_text, \
+            f"Output doesn't match expected _anonymized.txt file"
+
+    def test_medical_summary_matches_expected(self):
+        """
+        Direct comparison: original + replacements should equal _anonymized.txt
+        """
+        original_path = RESOURCES_DIR / "medical_summary_original.txt"
+        expected_path = RESOURCES_DIR / "medical_summary_anonymized.txt"
+
+        if not original_path.exists() or not expected_path.exists():
+            pytest.skip("Test resource files not found")
+
+        with open(original_path, "r", encoding="utf-8") as f:
+            original_text = f.read()
+
+        with open(expected_path, "r", encoding="utf-8") as f:
+            expected_text = f.read()
+
+        replacements = get_replacements_from_config()
+        actual_text = apply_replacements(original_text, replacements)
+
+        # Direct comparison
+        assert actual_text == expected_text, \
+            f"Output doesn't match expected _anonymized.txt file"
+
+
 class TestConfigReplacements:
     """Verify config has replacements loaded correctly."""
 
