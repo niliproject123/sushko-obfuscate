@@ -1,4 +1,4 @@
-from app.detectors.base import Detector, PIIMatch
+from api.detectors.base import Detector, PIIMatch
 
 
 class UserDefinedDetector(Detector):

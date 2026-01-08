@@ -1,5 +1,5 @@
-from app.obfuscators.base import Obfuscator
-from app.detectors.base import PIIMatch
+from api.obfuscators.base import Obfuscator
+from api.detectors.base import PIIMatch
 
 
 class TextObfuscator(Obfuscator):

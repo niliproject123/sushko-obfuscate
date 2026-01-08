@@ -2,13 +2,13 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from app.config import config
-from app.processors.pdf import PDFProcessor
-from app.processors.base import ProcessedPage
-from app.detectors.user_defined import UserDefinedDetector
-from app.detectors.base import PIIMatch
-from app.obfuscators.text import TextObfuscator
-from app.storage.temp import storage
+from api.config import config
+from api.processors.pdf import PDFProcessor
+from api.processors.base import ProcessedPage
+from api.detectors.user_defined import UserDefinedDetector
+from api.detectors.base import PIIMatch
+from api.obfuscators.text import TextObfuscator
+from api.storage.temp import storage
 
 
 router = APIRouter()

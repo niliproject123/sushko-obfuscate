@@ -1,9 +1,8 @@
-import os
 import time
 import uuid
 import threading
 from pathlib import Path
-from app.config import config
+from api.config import config
 
 
 class TempFileStorage:

@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -23,8 +24,23 @@ wheels/
 env/
 venv/
 ENV/
+.pytest_cache/
+
+# Node
+node_modules/
+ui/dist/
+ui/build/
+*.log
+
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# OS
 .DS_Store
+
+# Temp
+/tmp/
+*.tmp

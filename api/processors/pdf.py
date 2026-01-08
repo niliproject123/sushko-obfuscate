@@ -1,7 +1,7 @@
 import io
 import fitz  # PyMuPDF
 import pdfplumber
-from app.processors.base import Processor, PageContent, ProcessedPage
+from api.processors.base import Processor, PageContent, ProcessedPage
 
 
 class PDFProcessor(Processor):

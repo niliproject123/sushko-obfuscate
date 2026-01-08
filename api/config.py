@@ -1,6 +1,6 @@
-from app.detectors.israeli_id import IsraeliIdDetector
-from app.detectors.hebrew_name import HebrewNameDetector
-from app.detectors.english_name import EnglishNameDetector
+from api.detectors.israeli_id import IsraeliIdDetector
+from api.detectors.hebrew_name import HebrewNameDetector
+from api.detectors.english_name import EnglishNameDetector
 
 
 class Config:

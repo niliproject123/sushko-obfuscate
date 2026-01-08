@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from app.detectors.base import PIIMatch
+from api.detectors.base import PIIMatch
 
 
 class Obfuscator(ABC):
