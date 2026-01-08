@@ -39,7 +39,8 @@ class UserDefinedDetector(Detector):
                     text=search_text,
                     type=pii_type,
                     start=pos,
-                    end=pos + len(search_text)
+                    end=pos + len(search_text),
+                    pattern_name="user_defined",
                 ))
                 start = pos + 1
 

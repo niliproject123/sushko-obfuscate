@@ -23,21 +23,31 @@
 ```
 ├── api/                    # Backend API
 │   ├── main.py            # FastAPI entry point
-│   ├── config.py          # Global configuration
+│   ├── config/            # Configuration system
+│   │   ├── __init__.py
+│   │   ├── schemas.py     # Pydantic config models
+│   │   ├── loader.py      # Config loading/merging
+│   │   └── settings.json  # Server configuration
 │   ├── routes/
-│   │   └── extract.py     # Upload/download endpoints
+│   │   ├── extract.py     # Upload/download endpoints
+│   │   └── config.py      # Config management endpoints
 │   ├── processors/
 │   │   ├── base.py        # Processor interface
 │   │   └── pdf.py         # PDF processor
 │   ├── detectors/
 │   │   ├── base.py        # Detector interface
 │   │   ├── user_defined.py
+│   │   ├── regex.py       # Regex pattern detector
+│   │   ├── validators.py  # Validation functions (ID checksum, etc.)
 │   │   ├── israeli_id.py
 │   │   ├── hebrew_name.py
 │   │   └── english_name.py
 │   ├── obfuscators/
 │   │   ├── base.py        # Obfuscator interface
 │   │   └── text.py        # Placeholder replacement
+│   ├── replacements/      # Replacement generation
+│   │   ├── mapper.py      # Maps PII to replacements
+│   │   └── generators.py  # Fake value generators
 │   └── storage/
 │       └── temp.py        # Temp file management
 ├── ui/                     # Frontend React app
@@ -50,7 +60,13 @@
 ├── tests/                  # Test suite
 │   ├── test_detectors.py
 │   ├── test_obfuscators.py
-│   └── test_processors.py
+│   ├── test_processors.py
+│   ├── test_e2e.py        # End-to-end tests
+│   └── resources/         # Test resource files
+│       ├── medical_form_original.txt
+│       ├── medical_form_anonimyzed.txt
+│       ├── medical_summary_original.txt
+│       └── medical_summary_anonymized.txt
 ├── Dockerfile
 ├── requirements.txt
 ├── requirements.md
@@ -166,23 +182,83 @@ class Obfuscator:
 
 ## Configuration
 
-```python
-class Config:
-    PORT: int = 8000
-    MAX_FILE_SIZE: int = 20 * 1024 * 1024  # 20MB
-    FILE_TTL: int = 3600  # 1 hour
+Configuration is stored in `api/config/settings.json` and loaded via Pydantic models.
 
-    ACTIVE_DETECTORS = [
-        IsraeliIdDetector(),
-        HebrewNameDetector(),
-        EnglishNameDetector(),
-    ]
+### settings.json Structure
 
-    PLACEHOLDERS = {
-        "NAME": "[NAME]",
-        "ID": "[ID]",
-        "DEFAULT": "[REDACTED]",
+```json
+{
+  "default_replacements": {
+    "מיכאל": "דוד",
+    "15968548": "12345678",
+    "fmish2@gmail.com": "david.cohen@example.com"
+  },
+  "patterns": [
+    {
+      "name": "israeli_id",
+      "pii_type": "ID",
+      "regex": "\\b\\d{9}\\b",
+      "validator": "israeli_id_checksum"
+    },
+    {
+      "name": "phone_mobile",
+      "pii_type": "PHONE",
+      "regex": "0[5][0-9][-־]?\\d{7}"
     }
+  ],
+  "replacement_pools": {
+    "name_hebrew_first": ["דוד", "שרה", "יוסי"],
+    "name_hebrew_last": ["כהן", "לוי", "ישראלי"],
+    "city": ["רמת גן", "תל אביב", "חיפה"]
+  },
+  "ocr": {
+    "enabled": true,
+    "languages": ["he", "en"],
+    "dpi": 300
+  },
+  "placeholders": {
+    "NAME": "[NAME]",
+    "ID": "[ID]",
+    "PHONE": "[PHONE]",
+    "DEFAULT": "[REDACTED]"
+  }
+}
+```
+
+### Config Schemas
+
+```python
+class ServerConfig:
+    """Server-side configuration (admin-controlled)."""
+    patterns: list[PIIPatternConfig]
+    replacement_pools: ReplacementPoolsConfig
+    ocr: OCRConfig
+    placeholders: dict[str, str]
+    default_replacements: dict[str, str]  # Global PII→replacement mappings
+
+class RequestConfig:
+    """Per-request configuration (user-controlled)."""
+    user_replacements: dict[str, str]  # Additional/override replacements
+    disabled_detectors: list[str]
+    force_ocr: bool
+    custom_patterns: list[PIIPatternConfig]
+
+class MergedConfig:
+    """Merged: server defaults + request overrides."""
+    # Request user_replacements override default_replacements
+```
+
+### Word Boundary Support
+
+Hebrew text replacements use word boundaries to prevent breaking words:
+
+```python
+# Without word boundaries:
+"מאור" → "רמת גן"  breaks  "מאורגנת" → "רמת גןגנת"
+
+# With word boundaries (regex lookbehind/lookahead):
+pattern = r'(?<![א-ת])מאור(?![א-ת])'
+# Only matches standalone "מאור", not inside "מאורגנת"
 ```
 
 ## Deployment

@@ -14,6 +14,10 @@ def create_test_pdf(text: str) -> bytes:
     return output
 
 
+# Use text longer than min_text_threshold (50 chars) to avoid OCR fallback
+LONG_TEST_TEXT = "Hello World - This is a test PDF with enough text to pass the threshold for detection."
+
+
 class TestPDFProcessor:
     def setup_method(self):
         self.processor = PDFProcessor()
@@ -22,7 +26,7 @@ class TestPDFProcessor:
         assert "application/pdf" in self.processor.supported_mimes
 
     def test_extract_text(self):
-        pdf_bytes = create_test_pdf("Hello World")
+        pdf_bytes = create_test_pdf(LONG_TEST_TEXT)
         pages = self.processor.extract_text(pdf_bytes)
         assert len(pages) == 1
         assert "Hello World" in pages[0].text
@@ -30,8 +34,9 @@ class TestPDFProcessor:
 
     def test_extract_text_multiple_pages(self):
         doc = fitz.open()
-        doc.new_page().insert_text((50, 100), "Page 1")
-        doc.new_page().insert_text((50, 100), "Page 2")
+        # Use longer text to pass threshold
+        doc.new_page().insert_text((50, 100), "Page 1 - " + LONG_TEST_TEXT)
+        doc.new_page().insert_text((50, 100), "Page 2 - " + LONG_TEST_TEXT)
         pdf_bytes = doc.tobytes()
         doc.close()
 
@@ -41,7 +46,7 @@ class TestPDFProcessor:
         assert "Page 2" in pages[1].text
 
     def test_extract_text_metadata(self):
-        pdf_bytes = create_test_pdf("Test")
+        pdf_bytes = create_test_pdf(LONG_TEST_TEXT)
         pages = self.processor.extract_text(pdf_bytes)
         assert pages[0].metadata is not None
         assert "width" in pages[0].metadata

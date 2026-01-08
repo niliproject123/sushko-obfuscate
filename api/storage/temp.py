@@ -2,7 +2,9 @@ import time
 import uuid
 import threading
 from pathlib import Path
-from api.config import config
+
+# File TTL in seconds (1 hour)
+FILE_TTL = 3600
 
 
 class TempFileStorage:
@@ -46,7 +48,7 @@ class TempFileStorage:
         for file_path in self.base_dir.iterdir():
             if file_path.is_file():
                 file_age = current_time - file_path.stat().st_mtime
-                if file_age > config.FILE_TTL:
+                if file_age > FILE_TTL:
                     try:
                         file_path.unlink()
                     except OSError:
