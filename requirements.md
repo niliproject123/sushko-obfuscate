@@ -29,11 +29,15 @@ A web service that extracts text from PDF documents and obfuscates personally id
    - Default placeholders: `[NAME]`, `[ID]`, `[REDACTED]`
    - Support custom replacement text for user-defined terms
    - User-defined terms take priority over pattern detection
+   - pages kept - obfuscated pages match numbering in original pdf
 
 5. **Output**
    - Generate processed PDF with obfuscated content
+   - pages corresponds to original pdf pages
    - Provide summary of detected and obfuscated PII
    - Support file download with unique file ID
+
+     
 
 ### User Interface
 
@@ -52,6 +56,10 @@ A web service that extracts text from PDF documents and obfuscates personally id
    - Per-page match summary
    - Match type and text display
    - Download button for processed file
+
+4. **configuration**
+   - all PII categories, regexes, names etc. are configurable using the UI
+   - user can define specific values he wants to change with different values - valid only for this session and saved in local storage of browser
 
 ## Non-Functional Requirements
 
