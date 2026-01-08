@@ -8,18 +8,18 @@ class EnglishNameDetector(Detector):
     name = "english_name"
     pii_type = "NAME"
 
-    # Patterns for English name fields
+    # Patterns for English name fields (space only, not newlines)
     PATTERNS = [
         # Name: followed by text
-        re.compile(r'\bName\s*[:\-]?\s*([A-Za-z][A-Za-z\s\-\']+)', re.IGNORECASE),
+        re.compile(r'\bName\s*[:\-]?\s*([A-Za-z][A-Za-z \-\']+)', re.IGNORECASE),
         # First Name: followed by text
-        re.compile(r'\bFirst\s+Name\s*[:\-]?\s*([A-Za-z][A-Za-z\s\-\']+)', re.IGNORECASE),
+        re.compile(r'\bFirst\s+Name\s*[:\-]?\s*([A-Za-z][A-Za-z \-\']+)', re.IGNORECASE),
         # Last Name: followed by text
-        re.compile(r'\bLast\s+Name\s*[:\-]?\s*([A-Za-z][A-Za-z\s\-\']+)', re.IGNORECASE),
+        re.compile(r'\bLast\s+Name\s*[:\-]?\s*([A-Za-z][A-Za-z \-\']+)', re.IGNORECASE),
         # Surname: followed by text
-        re.compile(r'\bSurname\s*[:\-]?\s*([A-Za-z][A-Za-z\s\-\']+)', re.IGNORECASE),
+        re.compile(r'\bSurname\s*[:\-]?\s*([A-Za-z][A-Za-z \-\']+)', re.IGNORECASE),
         # Full Name: followed by text
-        re.compile(r'\bFull\s+Name\s*[:\-]?\s*([A-Za-z][A-Za-z\s\-\']+)', re.IGNORECASE),
+        re.compile(r'\bFull\s+Name\s*[:\-]?\s*([A-Za-z][A-Za-z \-\']+)', re.IGNORECASE),
     ]
 
     def detect(self, text: str) -> list[PIIMatch]:
