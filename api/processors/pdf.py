@@ -111,13 +111,12 @@ class PDFProcessor(Processor):
         """
         Extract text using OCR (for scanned/image-based PDFs).
 
-        Uses EasyOCR with Hebrew and English support.
+        Uses Tesseract with Hebrew and English support.
         Falls back gracefully if OCR dependencies are not installed.
         """
         try:
-            import easyocr
+            import pytesseract
             from pdf2image import convert_from_bytes
-            import numpy as np
         except ImportError as e:
             # OCR not available - return empty pages with warning
             doc = fitz.open(stream=file, filetype="pdf")
@@ -130,47 +129,37 @@ class PDFProcessor(Processor):
                         metadata={
                             "extraction_method": "ocr_unavailable",
                             "warning": f"OCR dependencies not installed: {e}. "
-                                       "Install with: pip install easyocr pdf2image Pillow",
+                                       "Install with: pip install pytesseract pdf2image && "
+                                       "apt-get install tesseract-ocr tesseract-ocr-heb",
                         }
                     ))
             finally:
                 doc.close()
             return pages
 
-        # Initialize OCR reader (lazy load, cached)
-        if self._ocr_reader is None:
-            self._ocr_reader = easyocr.Reader(
-                self.ocr_config.languages,
-                gpu=False
-            )
-
         # Convert PDF pages to images
         images = convert_from_bytes(file, dpi=self.ocr_config.dpi)
 
+        # Map language codes to Tesseract format
+        lang_map = {"he": "heb", "en": "eng"}
+        tesseract_langs = "+".join(
+            lang_map.get(lang, lang) for lang in self.ocr_config.languages
+        )
+
         pages = []
         for page_num, image in enumerate(images):
-            # Convert PIL Image to numpy array for EasyOCR
-            image_np = np.array(image)
-
-            # Run OCR
-            results = self._ocr_reader.readtext(image_np)
-
-            # Extract text from results: [(bbox, text, confidence), ...]
-            page_text = "\n".join([text for _, text, _ in results])
+            # Run OCR with Tesseract
+            page_text = pytesseract.image_to_string(
+                image,
+                lang=tesseract_langs,
+            )
 
             pages.append(PageContent(
                 page_number=page_num + 1,
                 text=page_text,
                 metadata={
-                    "extraction_method": "ocr",
-                    "ocr_results": [
-                        {
-                            "text": text,
-                            "confidence": float(conf),
-                            "bbox": bbox,
-                        }
-                        for bbox, text, conf in results
-                    ],
+                    "extraction_method": "ocr_tesseract",
+                    "languages": tesseract_langs,
                     "width": image.width,
                     "height": image.height,
                 }
