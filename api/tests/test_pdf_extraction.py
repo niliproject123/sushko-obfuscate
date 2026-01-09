@@ -105,10 +105,9 @@ class TestPDFExtractionCorrectness:
             if value not in extracted_text:
                 missing_values.append(value)
 
-        # Allow up to 10% of values to be missed due to OCR imperfections
-        max_missing = max(1, len(key_values) // 10)
-        assert len(missing_values) <= max_missing, \
-            f"PDF extraction missing too many key values ({len(missing_values)} > {max_missing}): {missing_values}"
+        # Require 100% - all key values must be found
+        assert len(missing_values) == 0, \
+            f"PDF extraction missing key values: {missing_values}"
 
     def test_medical_form_pdf_extraction_text_similarity(self):
         """
@@ -140,12 +139,24 @@ class TestPDFExtractionCorrectness:
         # Calculate overlap
         common_lines = extracted_lines & expected_lines
 
-        # At least 70% of expected lines should be found in extracted text
-        if len(expected_lines) > 0:
-            similarity = len(common_lines) / len(expected_lines)
-            assert similarity >= 0.7, \
-                f"PDF extraction similarity too low: {similarity:.1%}. " \
-                f"Expected at least 70% of lines to match."
+        # Require 100% match - extracted text should be identical to expected
+        if normalized_extracted != normalized_expected:
+            # Find and report differences for debugging
+            missing_in_extracted = expected_lines - extracted_lines
+            extra_in_extracted = extracted_lines - expected_lines
+
+            diff_report = []
+            if missing_in_extracted:
+                diff_report.append(f"Missing from extracted ({len(missing_in_extracted)} lines):")
+                for line in list(missing_in_extracted)[:10]:
+                    diff_report.append(f"  - {line[:80]!r}")
+            if extra_in_extracted:
+                diff_report.append(f"Extra in extracted ({len(extra_in_extracted)} lines):")
+                for line in list(extra_in_extracted)[:10]:
+                    diff_report.append(f"  + {line[:80]!r}")
+
+            assert False, \
+                f"PDF extraction does not match expected text.\n" + "\n".join(diff_report)
 
     def test_medical_summary_pdf_extraction_contains_expected_content(self):
         """
