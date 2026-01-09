@@ -1,0 +1,40 @@
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist
+build
+
+# Virtual environments
+venv
+env
+ENV
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+claude/
+
+# UI files (backend container doesn't need these)
+ui/
+
+# Tests
+api/tests/
+*.pytest_cache
+
+# Temporary files
+*.tmp
+*.log
+.DS_Store

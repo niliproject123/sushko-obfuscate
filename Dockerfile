@@ -8,4 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY api/ /app/api/
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Railway provides PORT env var, default to 8000 for local dev
+ENV PORT=8000
+CMD uvicorn api.main:app --host 0.0.0.0 --port $PORT

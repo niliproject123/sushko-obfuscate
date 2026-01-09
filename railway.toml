@@ -1,0 +1,28 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = ""
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+# Backend API Service
+[[services]]
+name = "pdf-anonymizer-api"
+dockerfile = "Dockerfile"
+
+[services.healthcheck]
+path = "/health"
+timeout = 10
+interval = 30
+
+# Frontend UI Service
+[[services]]
+name = "pdf-anonymizer-ui"
+dockerfile = "ui/Dockerfile"
+root = "ui"
+
+[services.healthcheck]
+path = "/"
+timeout = 10
+interval = 30
