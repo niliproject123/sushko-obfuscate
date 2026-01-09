@@ -57,16 +57,20 @@
 │   │   └── types.ts
 │   ├── package.json
 │   └── vite.config.ts
-├── tests/                  # Test suite
+├── api/tests/              # API test suite
 │   ├── test_detectors.py
 │   ├── test_obfuscators.py
 │   ├── test_processors.py
-│   ├── test_e2e.py        # End-to-end tests
-│   └── resources/         # Test resource files
-│       ├── medical_form_original.txt
-│       ├── medical_form_anonimyzed.txt
-│       ├── medical_summary_original.txt
-│       └── medical_summary_anonymized.txt
+│   ├── test_e2e.py         # End-to-end tests
+│   ├── test_pdf_extraction.py  # PDF extraction correctness tests
+│   ├── resources/          # Test resource files
+│   │   ├── medical_form_original.pdf
+│   │   ├── medical_form_original.txt
+│   │   ├── medical_form_anonymized.txt
+│   │   ├── medical_summary_original.pdf
+│   │   ├── medical_summary_original.txt
+│   │   └── medical_summary_anonymized.txt
+│   └── extraction_results/ # Generated extraction outputs for review
 ├── Dockerfile
 ├── requirements.txt
 ├── requirements.md
@@ -163,7 +167,35 @@ class Obfuscator:
 
 | Processor | MIME Types | Extracts via |
 |-----------|------------|--------------|
-| `PDFProcessor` | `application/pdf` | PyMuPDF + pdfplumber |
+| `PDFProcessor` | `application/pdf` | PyMuPDF + pdfplumber + Tesseract OCR |
+
+#### PDFProcessor Features
+
+**Text Layer Extraction (PyMuPDF)**
+- Extracts text from PDFs with embedded text layers
+- Automatically fixes RTL visual-order Hebrew text (reversed letters)
+
+**OCR Extraction (Tesseract)**
+- Falls back to OCR for scanned/image-based PDFs
+- Supports Hebrew (`heb`) and English (`eng`) languages
+- Configurable DPI (default: 300)
+
+**RTL Visual-Order Fix**
+Some PDFs store Hebrew text in "visual order" where letters are reversed:
+```
+Visual order (stored):   הספדהה  →  Fixed:  ההדפסה
+```
+The processor automatically detects and reverses Hebrew character sequences.
+
+**Page Boundary Preservation**
+- Extracts text per-page with page numbers
+- `combine_pages_with_markers()` adds page separators for downstream processing:
+```
+============================================================
+עמוד 1 מתוך 3
+============================================================
+[page content]
+```
 
 ### Detectors
 
@@ -273,12 +305,20 @@ pattern = r'(?<![א-ת])מאור(?![א-ת])'
 
 ```dockerfile
 FROM python:3.11-slim
-RUN apt-get update && apt-get install -y poppler-utils
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-heb
 COPY . /app
 WORKDIR /app
 RUN pip install -r requirements.txt
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
+
+**System Dependencies:**
+- `poppler-utils` - PDF to image conversion for OCR
+- `tesseract-ocr` - OCR engine
+- `tesseract-ocr-heb` - Hebrew language pack for Tesseract
 
 ## Future Expansion
 
