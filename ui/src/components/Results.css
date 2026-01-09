@@ -2,6 +2,28 @@
   margin-bottom: 1rem;
 }
 
+.warnings {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.warning {
+  color: #856404;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.warning:first-child {
+  margin-top: 0;
+}
+
+.warning:last-child {
+  margin-bottom: 0;
+}
+
 .summary {
   background: #e8f5e9;
   padding: 1rem;

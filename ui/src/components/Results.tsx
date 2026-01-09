@@ -8,6 +8,16 @@ interface ResultsProps {
 function Results({ results }: ResultsProps) {
   return (
     <div className="results">
+      {results.warnings && results.warnings.length > 0 && (
+        <div className="warnings">
+          {results.warnings.map((warning, i) => (
+            <div key={i} className="warning">
+              ⚠️ {warning}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="summary">
         <strong>Processing Complete</strong>
         <br />

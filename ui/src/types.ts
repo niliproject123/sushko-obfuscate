@@ -22,4 +22,5 @@ export interface ExtractResponse {
   page_count: number
   total_matches: number
   pages: PageSummary[]
+  warnings?: string[]
 }
