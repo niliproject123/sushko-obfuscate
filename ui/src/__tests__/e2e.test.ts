@@ -1,6 +1,6 @@
 // E2E Integration Tests (4.1-4.3)
 import { describe, test, expect, beforeAll } from 'vitest';
-import { loadTestPdf, API_BASE, isBackendRunning, apiGet, apiPut } from './setup';
+import { loadTestPdf, API_BASE, isBackendRunning, apiGet } from './setup';
 
 interface PIIPatternConfig {
   name: string;

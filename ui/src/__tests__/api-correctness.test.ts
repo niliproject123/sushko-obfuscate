@@ -105,7 +105,7 @@ describe('API Correctness Tests', () => {
 
   test('7.1 API mappings applied to original.txt matches anonymized.txt (medical_form)', async () => {
     // Step 1: Upload PDF and get mappings
-    const { mappings_used, total_matches } = await uploadPdfAndGetMappings(
+    const { mappings_used } = await uploadPdfAndGetMappings(
       'medical_form_original.pdf'
     );
 
@@ -174,11 +174,10 @@ describe('API Correctness Tests', () => {
       'medical_form_original.pdf'
     );
 
-    // Load the difference between original and anonymized to find what SHOULD be replaced
+    // Load original to check which PII values exist
     const originalText = loadResourceText('medical_form_original.txt');
-    const anonymizedText = loadResourceText('medical_form_anonimyzed.txt');
 
-    // Find values that are in original but not in anonymized (these are PII)
+    // Find values that are in original and should be in mappings_used
     // And check that they're in mappings_used
     const mappingKeys = Object.keys(mappings_used);
 
