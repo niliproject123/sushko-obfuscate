@@ -3,6 +3,7 @@ PDF Processor with OCR support for Hebrew and English.
 Handles both text-based PDFs and scanned/image-based documents.
 """
 import io
+import re
 from typing import Optional
 
 import fitz  # PyMuPDF
@@ -26,6 +27,53 @@ class PDFProcessor(Processor):
         """
         self.ocr_config = ocr_config or OCRConfig()
         self._ocr_reader = None  # Lazy loaded
+
+    @staticmethod
+    def _fix_rtl_visual_order(text: str) -> str:
+        """
+        Fix Hebrew text stored in visual order (reversed letters).
+
+        Some PDFs store RTL text in visual order where each Hebrew word
+        has its letters reversed. This function detects and fixes this.
+
+        Args:
+            text: Text that may have reversed Hebrew words
+
+        Returns:
+            Text with Hebrew words corrected to logical order
+        """
+        # Pattern matches sequences of Hebrew characters (including apostrophe for names like סז'ין)
+        hebrew_pattern = r"([\u0590-\u05FF]['\u0590-\u05FF]*)"
+
+        def reverse_match(match: re.Match) -> str:
+            return match.group(1)[::-1]
+
+        return re.sub(hebrew_pattern, reverse_match, text)
+
+    @staticmethod
+    def combine_pages_with_markers(pages: list[PageContent]) -> str:
+        """
+        Combine extracted pages into single text with page markers.
+
+        Adds visual page separators to maintain page structure for
+        downstream processing and PDF reassembly.
+
+        Args:
+            pages: List of extracted page content
+
+        Returns:
+            Combined text with page markers
+        """
+        total_pages = len(pages)
+        result_parts = []
+
+        for page in pages:
+            # Add page marker
+            marker = f"\n{'=' * 60}\nעמוד {page.page_number} מתוך {total_pages}\n{'=' * 60}\n"
+            result_parts.append(marker)
+            result_parts.append(page.text)
+
+        return "\n".join(result_parts)
 
     def extract_text(
         self,
@@ -80,13 +128,18 @@ class PDFProcessor(Processor):
     def _extract_with_pymupdf(self, file: bytes) -> list[PageContent]:
         """
         Extract text using PyMuPDF (for PDFs with text layer).
+
+        Automatically fixes RTL visual-order text where Hebrew letters
+        are stored in reversed order.
         """
         pages = []
         doc = fitz.open(stream=file, filetype="pdf")
 
         try:
             for page_num, page in enumerate(doc):
-                text = page.get_text()
+                raw_text = page.get_text()
+                # Fix RTL visual-order text (Hebrew letters may be reversed)
+                text = self._fix_rtl_visual_order(raw_text)
                 blocks = page.get_text("blocks")
 
                 pages.append(PageContent(
