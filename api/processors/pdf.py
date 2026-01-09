@@ -45,16 +45,33 @@ class PDFProcessor(Processor):
             List of PageContent with extracted text per page
         """
         if force_ocr and self.ocr_config.enabled:
-            return self._extract_with_ocr(file)
+            pages = self._extract_with_ocr(file)
+            # Mark as forced OCR
+            for page in pages:
+                if page.metadata:
+                    page.metadata["is_image_based"] = True
+            return pages
 
         # Check if PDF has extractable text
-        if self._has_text_layer(file):
+        has_text = self._has_text_layer(file)
+        if has_text:
             return self._extract_with_pymupdf(file)
         elif self.ocr_config.enabled:
-            return self._extract_with_ocr(file)
+            pages = self._extract_with_ocr(file)
+            # Mark as image-based PDF
+            for page in pages:
+                if page.metadata:
+                    page.metadata["is_image_based"] = True
+            return pages
         else:
             # OCR disabled but no text layer - return empty with warning
-            return self._extract_with_pymupdf(file)
+            pages = self._extract_with_pymupdf(file)
+            for page in pages:
+                if page.metadata is None:
+                    page.metadata = {}
+                page.metadata["is_image_based"] = True
+                page.metadata["warning"] = "PDF appears to be image-based but OCR is disabled"
+            return pages
 
     def _has_text_layer(self, file: bytes) -> bool:
         """

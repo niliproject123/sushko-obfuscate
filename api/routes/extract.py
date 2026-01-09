@@ -68,6 +68,7 @@ class ExtractResponse(BaseModel):
     total_matches: int
     pages: list[PageSummary]
     mappings_used: dict[str, str]  # original -> replacement
+    warnings: list[str] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -158,6 +159,34 @@ async def extract_and_obfuscate(
     # Create obfuscator with mapper
     obfuscator = TextObfuscator(mapper=mapper)
 
+    # Collect warnings from pages
+    warnings = []
+    is_image_based = False
+
+    for page in pages:
+        if page.metadata:
+            # Check if any page is image-based
+            if page.metadata.get("is_image_based"):
+                is_image_based = True
+            # Collect page-specific warnings
+            if "warning" in page.metadata:
+                page_warning = page.metadata["warning"]
+                if page_warning not in warnings:
+                    warnings.append(page_warning)
+
+    # Add general warning if PDF is image-based
+    if is_image_based:
+        ocr_method = any(
+            page.metadata and page.metadata.get("extraction_method") == "ocr"
+            for page in pages
+        )
+        if ocr_method:
+            warnings.insert(0, "This PDF is image-based and was processed using OCR. Text extraction accuracy may vary.")
+        else:
+            # This shouldn't happen if OCR is properly configured, but just in case
+            if "PDF appears to be image-based but OCR is disabled" not in warnings:
+                warnings.insert(0, "This PDF appears to be image-based. OCR was used for text extraction.")
+
     # Process each page
     processed_pages = []
     page_summaries = []
@@ -229,6 +258,7 @@ async def extract_and_obfuscate(
         total_matches=total_matches,
         pages=page_summaries,
         mappings_used=mapper.get_all_mappings(),
+        warnings=warnings,
     )
 
 
