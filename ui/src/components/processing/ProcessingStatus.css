@@ -1,0 +1,45 @@
+.processing-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.status-main {
+  font-weight: 500;
+  color: #333;
+}
+
+.status-detail {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.status-complete {
+  color: #28a745;
+  font-weight: 500;
+}

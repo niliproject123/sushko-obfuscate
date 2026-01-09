@@ -3,6 +3,7 @@ PDF Processor with OCR support for Hebrew and English.
 Handles both text-based PDFs and scanned/image-based documents.
 """
 import io
+import re
 from typing import Optional
 
 import fitz  # PyMuPDF
@@ -26,6 +27,53 @@ class PDFProcessor(Processor):
         """
         self.ocr_config = ocr_config or OCRConfig()
         self._ocr_reader = None  # Lazy loaded
+
+    @staticmethod
+    def _fix_rtl_visual_order(text: str) -> str:
+        """
+        Fix Hebrew text stored in visual order (reversed letters).
+
+        Some PDFs store RTL text in visual order where each Hebrew word
+        has its letters reversed. This function detects and fixes this.
+
+        Args:
+            text: Text that may have reversed Hebrew words
+
+        Returns:
+            Text with Hebrew words corrected to logical order
+        """
+        # Pattern matches sequences of Hebrew characters (including apostrophe for names like סז'ין)
+        hebrew_pattern = r"([\u0590-\u05FF]['\u0590-\u05FF]*)"
+
+        def reverse_match(match: re.Match) -> str:
+            return match.group(1)[::-1]
+
+        return re.sub(hebrew_pattern, reverse_match, text)
+
+    @staticmethod
+    def combine_pages_with_markers(pages: list[PageContent]) -> str:
+        """
+        Combine extracted pages into single text with page markers.
+
+        Adds visual page separators to maintain page structure for
+        downstream processing and PDF reassembly.
+
+        Args:
+            pages: List of extracted page content
+
+        Returns:
+            Combined text with page markers
+        """
+        total_pages = len(pages)
+        result_parts = []
+
+        for page in pages:
+            # Add page marker
+            marker = f"\n{'=' * 60}\nעמוד {page.page_number} מתוך {total_pages}\n{'=' * 60}\n"
+            result_parts.append(marker)
+            result_parts.append(page.text)
+
+        return "\n".join(result_parts)
 
     def extract_text(
         self,
@@ -97,13 +145,18 @@ class PDFProcessor(Processor):
     def _extract_with_pymupdf(self, file: bytes) -> list[PageContent]:
         """
         Extract text using PyMuPDF (for PDFs with text layer).
+
+        Automatically fixes RTL visual-order text where Hebrew letters
+        are stored in reversed order.
         """
         pages = []
         doc = fitz.open(stream=file, filetype="pdf")
 
         try:
             for page_num, page in enumerate(doc):
-                text = page.get_text()
+                raw_text = page.get_text()
+                # Fix RTL visual-order text (Hebrew letters may be reversed)
+                text = self._fix_rtl_visual_order(raw_text)
                 blocks = page.get_text("blocks")
 
                 pages.append(PageContent(
@@ -128,13 +181,12 @@ class PDFProcessor(Processor):
         """
         Extract text using OCR (for scanned/image-based PDFs).
 
-        Uses EasyOCR with Hebrew and English support.
+        Uses Tesseract with Hebrew and English support.
         Falls back gracefully if OCR dependencies are not installed.
         """
         try:
-            import easyocr
+            import pytesseract
             from pdf2image import convert_from_bytes
-            import numpy as np
         except ImportError as e:
             # OCR not available - return empty pages with warning
             doc = fitz.open(stream=file, filetype="pdf")
@@ -147,47 +199,37 @@ class PDFProcessor(Processor):
                         metadata={
                             "extraction_method": "ocr_unavailable",
                             "warning": f"OCR dependencies not installed: {e}. "
-                                       "Install with: pip install easyocr pdf2image Pillow",
+                                       "Install with: pip install pytesseract pdf2image && "
+                                       "apt-get install tesseract-ocr tesseract-ocr-heb",
                         }
                     ))
             finally:
                 doc.close()
             return pages
 
-        # Initialize OCR reader (lazy load, cached)
-        if self._ocr_reader is None:
-            self._ocr_reader = easyocr.Reader(
-                self.ocr_config.languages,
-                gpu=False
-            )
-
         # Convert PDF pages to images
         images = convert_from_bytes(file, dpi=self.ocr_config.dpi)
 
+        # Map language codes to Tesseract format
+        lang_map = {"he": "heb", "en": "eng"}
+        tesseract_langs = "+".join(
+            lang_map.get(lang, lang) for lang in self.ocr_config.languages
+        )
+
         pages = []
         for page_num, image in enumerate(images):
-            # Convert PIL Image to numpy array for EasyOCR
-            image_np = np.array(image)
-
-            # Run OCR
-            results = self._ocr_reader.readtext(image_np)
-
-            # Extract text from results: [(bbox, text, confidence), ...]
-            page_text = "\n".join([text for _, text, _ in results])
+            # Run OCR with Tesseract
+            page_text = pytesseract.image_to_string(
+                image,
+                lang=tesseract_langs,
+            )
 
             pages.append(PageContent(
                 page_number=page_num + 1,
                 text=page_text,
                 metadata={
-                    "extraction_method": "ocr",
-                    "ocr_results": [
-                        {
-                            "text": text,
-                            "confidence": float(conf),
-                            "bbox": bbox,
-                        }
-                        for bbox, text, conf in results
-                    ],
+                    "extraction_method": "ocr_tesseract",
+                    "languages": tesseract_langs,
                     "width": image.width,
                     "height": image.height,
                 }

@@ -1,56 +1,59 @@
-import { useState } from 'react'
-import FileUpload from './components/FileUpload'
-import ObfuscationList from './components/ObfuscationList'
-import Results from './components/Results'
-import { ExtractResponse, ObfuscationTerm } from './types'
-import './App.css'
+import { useState } from 'react';
+import { Tabs, Tab } from './components/layout';
+import { UserConfig } from './components/config/UserConfig';
+import { AdminConfig } from './components/config/AdminConfig';
+import { FileUpload } from './components/upload';
+import { ProcessingStatus } from './components/processing';
+import { ResultsContainer } from './components/results';
+import { useUserConfig } from './hooks/useUserConfig';
+import { useAdminConfig } from './hooks/useAdminConfig';
+import { useFileProcessor } from './hooks/useFileProcessor';
+import './App.css';
+
+const TABS: Tab[] = [
+  { id: 'user', label: 'User Config' },
+  { id: 'admin', label: 'Admin Config' },
+];
 
 function App() {
-  const [file, setFile] = useState<File | null>(null)
-  const [obfuscations, setObfuscations] = useState<ObfuscationTerm[]>([
-    { text: '', type: 'USER_DEFINED' }
-  ])
-  const [results, setResults] = useState<ExtractResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState('user');
 
-  const handleProcess = async () => {
-    if (!file) return
+  // User config (localStorage)
+  const {
+    config: userConfig,
+    setReplacements,
+    toggleDetector,
+    setForceOcr,
+  } = useUserConfig();
 
-    setLoading(true)
-    setError(null)
+  // Admin config (server)
+  const {
+    config: adminConfig,
+    loading: adminLoading,
+    error: adminError,
+    refresh: refreshAdminConfig,
+    addPattern,
+    updatePattern,
+    deletePattern,
+    updatePool,
+    updateOcr,
+    updatePlaceholders,
+    updateDefaultReplacements,
+  } = useAdminConfig();
 
-    const formData = new FormData()
-    formData.append('file', file)
+  // File processor
+  const {
+    files,
+    results,
+    processing,
+    addFiles,
+    clearFiles,
+    processAll,
+  } = useFileProcessor();
 
-    const validObfuscations = obfuscations.filter(o => o.text.trim())
-    formData.append('obfuscations', JSON.stringify(validObfuscations))
-
-    try {
-      const response = await fetch('/api/extract', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.detail || 'Processing failed')
-      }
-
-      const data: ExtractResponse = await response.json()
-      setResults(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDownload = () => {
-    if (results?.file_id) {
-      window.location.href = `/api/download/${results.file_id}`
-    }
-  }
+  const handleProcess = () => {
+    processAll(userConfig);
+  };
 
   return (
     <div className="app">
@@ -61,52 +64,61 @@ function App() {
 
       <main className="main">
         <section className="card">
-          <h2>1. Upload PDF</h2>
-          <FileUpload file={file} onFileSelect={setFile} />
+          <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+
+          {activeTab === 'user' && (
+            <UserConfig
+              config={userConfig}
+              onReplacementsChange={setReplacements}
+              onToggleDetector={toggleDetector}
+              onForceOcrChange={setForceOcr}
+              availablePatterns={adminConfig?.patterns}
+            />
+          )}
+
+          {activeTab === 'admin' && (
+            <AdminConfig
+              config={adminConfig}
+              loading={adminLoading}
+              error={adminError}
+              onRefresh={refreshAdminConfig}
+              onAddPattern={addPattern}
+              onUpdatePattern={updatePattern}
+              onDeletePattern={deletePattern}
+              onUpdatePool={updatePool}
+              onUpdateOcr={updateOcr}
+              onUpdatePlaceholders={updatePlaceholders}
+              onUpdateDefaultReplacements={updateDefaultReplacements}
+            />
+          )}
         </section>
 
         <section className="card">
-          <h2>2. Custom Obfuscations (Optional)</h2>
-          <p className="hint">
-            Add specific text to find and replace. Leave "Replace with" empty to use default placeholder.
-          </p>
-          <ObfuscationList
-            obfuscations={obfuscations}
-            onChange={setObfuscations}
+          <h2>Upload PDFs</h2>
+          <FileUpload
+            files={files}
+            onFilesAdd={addFiles}
+            onClear={clearFiles}
+            disabled={processing}
           />
         </section>
 
         <section className="card">
-          <h2>3. Process</h2>
           <button
             className="btn btn-primary"
             onClick={handleProcess}
-            disabled={!file || loading}
+            disabled={files.length === 0 || processing}
           >
-            {loading ? 'Processing...' : 'Process PDF'}
+            {processing ? 'Processing...' : `Process ${files.length || ''} PDF${files.length !== 1 ? 's' : ''}`}
           </button>
-          {error && <p className="error">{error}</p>}
         </section>
 
-        {loading && (
-          <section className="card loading">
-            <div className="spinner" />
-            <p>Processing your PDF...</p>
-          </section>
-        )}
+        <ProcessingStatus results={results} processing={processing} />
 
-        {results && !loading && (
-          <section className="card">
-            <h2>Results</h2>
-            <Results results={results} />
-            <button className="btn btn-primary" onClick={handleDownload}>
-              Download Processed PDF
-            </button>
-          </section>
-        )}
+        <ResultsContainer results={results} />
       </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
