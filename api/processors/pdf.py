@@ -3,6 +3,7 @@ PDF Processor with OCR support for Hebrew and English.
 Handles both text-based PDFs and scanned/image-based documents.
 """
 import io
+import os
 import re
 from typing import Optional
 
@@ -11,6 +12,22 @@ import pdfplumber
 
 from api.processors.base import Processor, PageContent, ProcessedPage
 from api.config.schemas import OCRConfig
+
+
+# Hebrew-capable font paths (in order of preference)
+HEBREW_FONT_PATHS = [
+    "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+]
+
+
+def _find_hebrew_font() -> Optional[str]:
+    """Find a system font that supports Hebrew characters."""
+    for font_path in HEBREW_FONT_PATHS:
+        if os.path.exists(font_path):
+            return font_path
+    return None
 
 
 class PDFProcessor(Processor):
@@ -255,25 +272,65 @@ class PDFProcessor(Processor):
         """
         Reassemble PDF with processed text.
 
-        For v1, creates a simple text-based PDF with the processed content.
+        Creates a text-based PDF with the processed content.
+        Uses a Hebrew-capable font for proper rendering of Hebrew text.
+        Handles long text by creating continuation pages as needed.
         """
         doc = fitz.open()
 
-        for page_data in pages:
-            # Create new page
-            new_page = doc.new_page(
-                width=612,  # Letter size
-                height=792
-            )
+        # Find a Hebrew-capable font and create Font object
+        font_path = _find_hebrew_font()
+        if font_path:
+            font = fitz.Font(fontfile=font_path)
+        else:
+            font = fitz.Font("helv")
 
-            # Insert processed text
-            text_rect = fitz.Rect(50, 50, 562, 742)
-            new_page.insert_textbox(
-                text_rect,
-                page_data.processed_text,
-                fontsize=10,
-                fontname="helv",
-            )
+        # Page layout constants
+        PAGE_WIDTH = 612  # Letter size
+        PAGE_HEIGHT = 792
+        MARGIN_LEFT = 50
+        MARGIN_TOP = 50
+        MARGIN_BOTTOM = 50
+        FONTSIZE = 10
+        LINE_HEIGHT = FONTSIZE * 1.2  # Standard line spacing
+
+        max_y = PAGE_HEIGHT - MARGIN_BOTTOM
+
+        for page_data in pages:
+            text = page_data.processed_text
+            if not text.strip():
+                # Create empty page for empty text
+                doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
+                continue
+
+            lines = text.split('\n')
+            line_idx = 0
+
+            while line_idx < len(lines):
+                # Create a new PDF page
+                new_page = doc.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
+
+                # Use TextWriter for better text control
+                tw = fitz.TextWriter(new_page.rect)
+
+                y = MARGIN_TOP + FONTSIZE  # Start position
+
+                while line_idx < len(lines) and y < max_y:
+                    line = lines[line_idx]
+
+                    # Insert text at position using Font object
+                    tw.append(
+                        (MARGIN_LEFT, y),
+                        line,
+                        fontsize=FONTSIZE,
+                        font=font,
+                    )
+
+                    y += LINE_HEIGHT
+                    line_idx += 1
+
+                # Write all text to page
+                tw.write_text(new_page)
 
         # Save to bytes
         output = io.BytesIO()
