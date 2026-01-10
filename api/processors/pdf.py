@@ -329,11 +329,14 @@ class PDFProcessor(Processor):
         PAGE_HEIGHT = 792
         MARGIN_LEFT = 50
         MARGIN_TOP = 50
+        MARGIN_RIGHT = 50
         MARGIN_BOTTOM = 50
         FONTSIZE = 10
         LINE_HEIGHT = FONTSIZE * 1.2  # Standard line spacing
 
         max_y = PAGE_HEIGHT - MARGIN_BOTTOM
+        # Right edge for RTL text alignment
+        RIGHT_X = PAGE_WIDTH - MARGIN_RIGHT
 
         for page_data in pages:
             text = page_data.processed_text
@@ -360,9 +363,14 @@ class PDFProcessor(Processor):
                     # Prepare text for PDF (reverse Hebrew for proper RTL display)
                     pdf_line = _prepare_text_for_pdf(line)
 
+                    # Calculate text width for right alignment
+                    text_width = font.text_length(pdf_line, fontsize=FONTSIZE)
+                    # Position text from right side (RTL)
+                    x_pos = RIGHT_X - text_width
+
                     # Insert text at position using Font object
                     tw.append(
-                        (MARGIN_LEFT, y),
+                        (x_pos, y),
                         pdf_line,
                         fontsize=FONTSIZE,
                         font=font,
