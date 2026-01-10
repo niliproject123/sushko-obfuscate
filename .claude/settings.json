@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allowedTools": [
+      "Read",
+      "Write",
+      "Bash(pip *)",
+      "Bash(npm *)",
+      "Bash(uvicorn *)",
+      "Bash(python *)",
+      "Bash(git *)"
+    ]
+  }
+}
