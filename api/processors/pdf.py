@@ -210,8 +210,9 @@ class PDFProcessor(Processor):
         try:
             for page_num, page in enumerate(doc):
                 raw_text = page.get_text()
-                # Fix RTL visual-order text (Hebrew letters may be reversed)
-                text = self._fix_rtl_visual_order(raw_text)
+                # PyMuPDF returns text in logical order (correct for Hebrew)
+                # No RTL fix needed - the text is already correct
+                text = raw_text
                 blocks = page.get_text("blocks")
 
                 pages.append(PageContent(
