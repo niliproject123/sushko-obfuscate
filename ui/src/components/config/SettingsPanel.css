@@ -23,9 +23,15 @@
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+@media (min-width: 576px) {
+  .settings-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
 }
 
 .setting-field {
@@ -35,15 +41,16 @@
 }
 
 .setting-field label {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #666;
 }
 
 .setting-field input {
-  padding: 0.5rem;
+  min-height: 44px;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .setting-field input:focus {
@@ -56,11 +63,13 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
 }
 
 .placeholder-list {
@@ -72,22 +81,36 @@
 
 .placeholder-row {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 576px) {
+  .placeholder-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
 }
 
 .placeholder-key {
-  min-width: 100px;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+}
+
+@media (min-width: 576px) {
+  .placeholder-key {
+    min-width: 100px;
+  }
 }
 
 .placeholder-row input {
   flex: 1;
-  padding: 0.5rem;
+  min-height: 44px;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .placeholder-row input:focus {
@@ -96,7 +119,8 @@
 }
 
 .btn-save {
-  padding: 0.5rem 1rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   background: #007bff;
   color: white;
   border: none;

@@ -14,12 +14,13 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #666;
-  padding: 0.25rem 0;
+  padding: 0.75rem 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 44px;
 }
 
 .advanced-toggle:hover {
@@ -58,12 +59,13 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  min-height: 44px;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
 }
 
