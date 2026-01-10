@@ -5,20 +5,33 @@
 }
 
 .admin-config .loading {
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   color: #666;
 }
 
+@media (min-width: 768px) {
+  .admin-config .loading {
+    padding: 2rem;
+  }
+}
+
 .admin-config .error {
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   color: #dc3545;
 }
 
+@media (min-width: 768px) {
+  .admin-config .error {
+    padding: 2rem;
+  }
+}
+
 .admin-config .error button {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   background: #007bff;
   color: white;
   border: none;

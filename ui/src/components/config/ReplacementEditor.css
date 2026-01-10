@@ -24,22 +24,37 @@
 
 .replacement-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+@media (min-width: 576px) {
+  .replacement-row {
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
 .replacement-row .arrow {
   color: #666;
   font-size: 1.2rem;
   flex-shrink: 0;
+  display: none;
+}
+
+@media (min-width: 576px) {
+  .replacement-row .arrow {
+    display: block;
+  }
 }
 
 .replacement-row input {
   flex: 1;
-  padding: 0.5rem;
+  min-height: 44px;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .replacement-row input:focus {
@@ -63,8 +78,8 @@
 
 .remove-btn,
 .add-btn {
-  width: 32px;
-  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -73,6 +88,15 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+@media (min-width: 576px) {
+  .remove-btn,
+  .add-btn {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1rem;
+  }
 }
 
 .remove-btn {

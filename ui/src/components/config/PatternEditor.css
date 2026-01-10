@@ -17,7 +17,8 @@
 }
 
 .btn-add {
-  padding: 0.5rem 1rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   background: #28a745;
   color: white;
   border: none;
@@ -44,8 +45,14 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .form-field {
@@ -65,10 +72,11 @@
 
 .form-field input,
 .form-field select {
-  padding: 0.5rem;
+  min-height: 44px;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .form-field input:focus,
@@ -97,7 +105,8 @@
 
 .btn-cancel,
 .btn-save {
-  padding: 0.5rem 1rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -135,12 +144,20 @@
 
 .pattern-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 0.75rem;
   background: #f8f9fa;
   border-radius: 4px;
   border: 1px solid #e0e0e0;
+}
+
+@media (min-width: 768px) {
+  .pattern-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .pattern-item.disabled {
@@ -149,23 +166,32 @@
 
 .pattern-info {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   flex: 1;
   min-width: 0;
 }
 
+@media (min-width: 768px) {
+  .pattern-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
 .pattern-name {
   font-weight: 500;
-  white-space: nowrap;
+  word-break: break-word;
 }
 
 .pattern-type {
-  font-size: 0.8rem;
-  padding: 0.2rem 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
   background: #e0e0e0;
   border-radius: 4px;
   white-space: nowrap;
+  align-self: flex-start;
 }
 
 .pattern-regex {
@@ -174,22 +200,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: monospace;
 }
 
 .pattern-actions {
   display: flex;
   gap: 0.5rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .btn-toggle,
 .btn-edit,
 .btn-delete {
-  padding: 0.35rem 0.75rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+}
+
+@media (min-width: 768px) {
+  .btn-toggle,
+  .btn-edit,
+  .btn-delete {
+    min-height: auto;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
 }
 
 .btn-toggle.on {
