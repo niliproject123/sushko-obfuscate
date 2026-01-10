@@ -1,8 +1,11 @@
 FROM python:3.11-slim
 
-# Install system dependencies
+# Install system dependencies including OCR
 RUN apt-get update && apt-get install -y \
     poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-heb \
+    tesseract-ocr-eng \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
