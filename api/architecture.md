@@ -173,19 +173,27 @@ class Obfuscator:
 
 **Text Layer Extraction (PyMuPDF)**
 - Extracts text from PDFs with embedded text layers
-- Automatically fixes RTL visual-order Hebrew text (reversed letters)
+- PyMuPDF returns text in logical order (correct for Hebrew)
 
 **OCR Extraction (Tesseract)**
 - Falls back to OCR for scanned/image-based PDFs
 - Supports Hebrew (`heb`) and English (`eng`) languages
 - Configurable DPI (default: 300)
 
-**RTL Visual-Order Fix**
-Some PDFs store Hebrew text in "visual order" where letters are reversed:
+**PDF Reassembly with RTL Support**
+The processor creates new PDFs with proper Hebrew/RTL support:
+
+1. **Hebrew Font**: Uses system fonts with Hebrew support (FreeSans, DejaVuSans, Liberation Sans)
+2. **Right-to-Left Alignment**: Text is right-aligned for natural Hebrew reading direction
+3. **Visual Order Conversion**: Text is converted to visual order before writing because PyMuPDF's TextWriter reverses Hebrew characters during rendering
+
 ```
-Visual order (stored):   הספדהה  →  Fixed:  ההדפסה
+Logical order (in memory):  תאריך ושעת ההדפסה: 29/05/2024
+    ↓ prepare for PDF (reverse line, preserve numbers)
+Visual order (written):     29/05/2024 :הספדהה תעשו ךיראת
+    ↓ TextWriter reverses Hebrew chars
+Final PDF display:          תאריך ושעת ההדפסה: 29/05/2024 ✓
 ```
-The processor automatically detects and reverses Hebrew character sequences.
 
 **Page Boundary Preservation**
 - Extracts text per-page with page numbers
