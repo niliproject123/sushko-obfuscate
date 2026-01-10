@@ -30,6 +30,63 @@ def _find_hebrew_font() -> Optional[str]:
     return None
 
 
+def _prepare_text_for_pdf(text: str) -> str:
+    """
+    Prepare text for PDF output by converting to visual order for RTL display.
+
+    PyMuPDF's TextWriter reverses Hebrew character sequences during rendering.
+    To counteract this and achieve correct RTL visual display, we need to:
+    1. Pre-reverse Hebrew character sequences (TextWriter will reverse them back)
+    2. Reverse word order in lines containing Hebrew (for RTL visual order)
+
+    Args:
+        text: Text in logical order
+
+    Returns:
+        Text converted to visual-order for PDF rendering
+    """
+    def reverse_hebrew_chars(s: str) -> str:
+        """Reverse Hebrew character sequences in a string."""
+        result = []
+        i = 0
+        while i < len(s):
+            if '\u0590' <= s[i] <= '\u05FF':
+                # Collect Hebrew sequence
+                hebrew_seq = []
+                while i < len(s) and '\u0590' <= s[i] <= '\u05FF':
+                    hebrew_seq.append(s[i])
+                    i += 1
+                # Pre-reverse so TextWriter's reversal gives correct order
+                result.append(''.join(reversed(hebrew_seq)))
+            else:
+                result.append(s[i])
+                i += 1
+        return ''.join(result)
+
+    def process_line(line: str) -> str:
+        # Check if line contains Hebrew - if so, treat as RTL line
+        if not re.search(r'[\u0590-\u05FF]', line):
+            return line  # No Hebrew, return as-is
+
+        # For RTL lines:
+        # 1. Pre-reverse Hebrew characters (counteracts TextWriter's reversal)
+        # 2. Reverse word order (for visual RTL display)
+
+        # Split on whitespace, preserving the whitespace
+        tokens = re.split(r'(\s+)', line)
+
+        # Pre-reverse Hebrew chars in each token
+        processed_tokens = [reverse_hebrew_chars(token) for token in tokens]
+
+        # Reverse token order for RTL visual display
+        reversed_tokens = list(reversed(processed_tokens))
+        return ''.join(reversed_tokens)
+
+    # Process each line
+    lines = text.split('\n')
+    return '\n'.join(process_line(line) for line in lines)
+
+
 class PDFProcessor(Processor):
     """PDF processor using PyMuPDF, pdfplumber, and optional OCR."""
 
@@ -318,10 +375,13 @@ class PDFProcessor(Processor):
                 while line_idx < len(lines) and y < max_y:
                     line = lines[line_idx]
 
+                    # Prepare text for PDF (reverse Hebrew for proper RTL display)
+                    pdf_line = _prepare_text_for_pdf(line)
+
                     # Insert text at position using Font object
                     tw.append(
                         (MARGIN_LEFT, y),
-                        line,
+                        pdf_line,
                         fontsize=FONTSIZE,
                         font=font,
                     )
