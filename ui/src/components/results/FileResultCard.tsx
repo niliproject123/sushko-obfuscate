@@ -77,6 +77,16 @@ export function FileResultCard({ result }: FileResultCardProps) {
         </button>
       </div>
 
+      {response.warnings && response.warnings.length > 0 && (
+        <div className="warnings-section">
+          {response.warnings.map((warning, idx) => (
+            <div key={idx} className="warning-message">
+              ⚠️ {warning}
+            </div>
+          ))}
+        </div>
+      )}
+
       {mappingEntries.length > 0 && (
         <div className="pages-summary">
           <div className="page-item">
