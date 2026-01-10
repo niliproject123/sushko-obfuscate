@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from api.routes.extract import router as extract_router
 from api.routes.config import router as config_router
@@ -28,15 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routes
+# Include API routes
 app.include_router(extract_router, prefix="/api", tags=["extraction"])
 app.include_router(config_router, prefix="/api", tags=["configuration"])
-
-
-@app.get("/")
-async def root():
-    """API root."""
-    return {"message": "PDF Text Extractor API", "docs": "/docs"}
 
 
 @app.get("/health")
@@ -45,18 +39,42 @@ async def health_check():
     return {"status": "healthy"}
 
 
-# Serve frontend static files in production
-if STATIC_DIR.exists() and INDEX_HTML.exists():
-    # Mount static assets (JS, CSS, images)
-    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+@app.on_event("startup")
+async def startup_event():
+    """Mount static files on startup if they exist."""
+    if STATIC_DIR.exists():
+        print(f"Static directory found: {STATIC_DIR}")
+        print(f"Contents: {list(STATIC_DIR.iterdir())}")
+        if (STATIC_DIR / "assets").exists():
+            app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+            print("Mounted /assets")
+    else:
+        print(f"Static directory NOT found: {STATIC_DIR}")
 
-    # Serve index.html for all non-API routes (SPA routing)
-    @app.get("/{full_path:path}")
-    async def serve_spa(request: Request, full_path: str):
-        """Serve the React SPA for all non-API routes."""
-        # Check if it's a static file that exists
+
+@app.get("/")
+async def root(request: Request):
+    """Serve index.html or API info."""
+    if INDEX_HTML.exists():
+        return FileResponse(INDEX_HTML)
+    return {"message": "PDF Text Extractor API", "docs": "/docs"}
+
+
+@app.get("/{full_path:path}")
+async def serve_spa(request: Request, full_path: str):
+    """Serve static files or index.html for SPA routing."""
+    # Skip API routes (they're handled by routers)
+    if full_path.startswith("api/"):
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    # Try to serve static file
+    if STATIC_DIR.exists():
         file_path = STATIC_DIR / full_path
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
-        # Otherwise serve index.html for SPA routing
+
+    # Serve index.html for SPA routing
+    if INDEX_HTML.exists():
         return FileResponse(INDEX_HTML)
+
+    return JSONResponse({"error": "Not found"}, status_code=404)
