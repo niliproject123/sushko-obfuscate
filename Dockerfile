@@ -1,10 +1,14 @@
 FROM python:3.11-slim
 
-# Install system dependencies (poppler for PDF, nodejs for frontend build)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     poppler-utils \
-    nodejs \
-    npm \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 (LTS) - Debian's nodejs is too old
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -25,8 +29,5 @@ COPY api/ /app/api/
 # Copy built frontend to static folder for serving
 RUN mkdir -p /app/static && cp -r /app/ui/dist/* /app/static/
 
-# Expose port (Railway uses PORT env var)
-EXPOSE 8000
-
-# Start server - Railway sets PORT env var automatically
+# Railway sets PORT env var automatically
 CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
