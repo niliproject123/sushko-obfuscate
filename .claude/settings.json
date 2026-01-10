@@ -1,13 +1,20 @@
 {
-  "permissions": {
-    "allowedTools": [
-      "Read",
-      "Write",
-      "Bash(pip *)",
-      "Bash(npm *)",
-      "Bash(uvicorn *)",
-      "Bash(python *)",
-      "Bash(git *)"
-    ]
-  }
+    "permissions": {
+        "allowedTools": [
+            "Read",
+            "Write",
+            "Bash(pip *)",
+            "Bash(npm *)",
+            "Bash(uvicorn *)",
+            "Bash(python *)",
+            "Bash(git *)",
+            "Read",
+            "Write",
+            "Bash"
+        ],
+        "allow": [
+            "Read(c:\\**)",
+            "Write(c:\\dev\\**)"
+        ]
+    }
 }
