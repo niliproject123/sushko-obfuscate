@@ -34,10 +34,10 @@ def _prepare_text_for_pdf(text: str) -> str:
     """
     Prepare text for PDF output by converting to visual order for RTL display.
 
-    PyMuPDF's TextWriter reverses Hebrew character sequences during rendering.
-    To counteract this and achieve correct RTL visual display, we need to:
-    1. Pre-reverse Hebrew character sequences (TextWriter will reverse them back)
-    2. Reverse word order in lines containing Hebrew (for RTL visual order)
+    PyMuPDF's TextWriter reverses Hebrew character sequences during rendering
+    but leaves numbers and Latin characters in place. To achieve correct RTL
+    visual display, we reverse each line that contains Hebrew, but preserve
+    the internal order of number sequences.
 
     Args:
         text: Text in logical order
@@ -45,46 +45,27 @@ def _prepare_text_for_pdf(text: str) -> str:
     Returns:
         Text converted to visual-order for PDF rendering
     """
-    def reverse_hebrew_chars(s: str) -> str:
-        """Reverse Hebrew character sequences in a string."""
-        result = []
-        i = 0
-        while i < len(s):
-            if '\u0590' <= s[i] <= '\u05FF':
-                # Collect Hebrew sequence
-                hebrew_seq = []
-                while i < len(s) and '\u0590' <= s[i] <= '\u05FF':
-                    hebrew_seq.append(s[i])
-                    i += 1
-                # Pre-reverse so TextWriter's reversal gives correct order
-                result.append(''.join(reversed(hebrew_seq)))
-            else:
-                result.append(s[i])
-                i += 1
-        return ''.join(result)
-
-    def process_line(line: str) -> str:
-        # Check if line contains Hebrew - if so, treat as RTL line
+    def reverse_line_preserve_numbers(line: str) -> str:
+        """Reverse a line but keep number sequences in correct order."""
         if not re.search(r'[\u0590-\u05FF]', line):
             return line  # No Hebrew, return as-is
 
-        # For RTL lines:
-        # 1. Pre-reverse Hebrew characters (counteracts TextWriter's reversal)
-        # 2. Reverse word order (for visual RTL display)
+        # Reverse the entire line
+        reversed_line = line[::-1]
 
-        # Split on whitespace, preserving the whitespace
-        tokens = re.split(r'(\s+)', line)
+        # Find and fix reversed number sequences (including decimals, dates, times)
+        # Pattern matches sequences of digits with common separators
+        def fix_numbers(match):
+            return match.group(0)[::-1]  # Reverse back to correct order
 
-        # Pre-reverse Hebrew chars in each token
-        processed_tokens = [reverse_hebrew_chars(token) for token in tokens]
+        # Fix number sequences (digits with /, -, :, . separators)
+        result = re.sub(r'[\d]+(?:[/\-:.][\d]+)*', fix_numbers, reversed_line)
 
-        # Reverse token order for RTL visual display
-        reversed_tokens = list(reversed(processed_tokens))
-        return ''.join(reversed_tokens)
+        return result
 
     # Process each line
     lines = text.split('\n')
-    return '\n'.join(process_line(line) for line in lines)
+    return '\n'.join(reverse_line_preserve_numbers(line) for line in lines)
 
 
 class PDFProcessor(Processor):

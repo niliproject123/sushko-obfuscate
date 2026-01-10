@@ -38,9 +38,13 @@ export async function downloadFile(fileId: string, originalFileName: string): Pr
   const blob = await response.blob();
   const downloadUrl = URL.createObjectURL(blob);
 
+  // Create filename: originalname_anonim.pdf
+  const baseName = originalFileName.replace(/\.pdf$/i, '');
+  const downloadFileName = `${baseName}_anonim.pdf`;
+
   const link = document.createElement('a');
   link.href = downloadUrl;
-  link.download = `anonymized_${originalFileName}`;
+  link.download = downloadFileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
