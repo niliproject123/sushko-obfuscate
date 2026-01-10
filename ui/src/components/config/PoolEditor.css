@@ -29,10 +29,11 @@
 
 .pool-form textarea {
   width: 100%;
+  min-height: 120px;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-family: inherit;
   resize: vertical;
   direction: auto;
@@ -52,7 +53,8 @@
 
 .pool-form .btn-cancel,
 .pool-form .btn-save {
-  padding: 0.5rem 1rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -82,27 +84,36 @@
 
 .pool-item {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 0.75rem;
   background: #f8f9fa;
   border-radius: 4px;
   border: 1px solid #e0e0e0;
 }
 
+@media (min-width: 768px) {
+  .pool-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
 .pool-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  min-width: 150px;
+  flex: 1;
 }
 
 .pool-name {
   font-weight: 500;
+  word-break: break-word;
 }
 
 .pool-count {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #666;
 }
 
@@ -116,15 +127,33 @@
   direction: auto;
 }
 
+@media (max-width: 767px) {
+  .pool-preview {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
 .pool-item .btn-edit {
-  padding: 0.35rem 0.75rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   background: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   flex-shrink: 0;
+  align-self: stretch;
+}
+
+@media (min-width: 768px) {
+  .pool-item .btn-edit {
+    min-height: auto;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    align-self: auto;
+  }
 }
 
 .pool-item .btn-edit:hover {

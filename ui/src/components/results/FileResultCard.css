@@ -15,27 +15,43 @@
 
 .card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 1rem;
   background: #f8f9fa;
   border-bottom: 1px solid #e0e0e0;
+}
+
+@media (min-width: 576px) {
+  .card-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .file-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
 }
 
 .file-name {
   font-weight: 500;
   color: #333;
+  word-break: break-word;
 }
 
 .stats {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #666;
+}
+
+@media (max-width: 575px) {
+  .stats {
+    font-size: 0.85rem;
+  }
 }
 
 .status-badge {
@@ -56,13 +72,21 @@
 }
 
 .download-btn {
-  padding: 0.5rem 1rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
   background: #28a745;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
+  align-self: stretch;
+}
+
+@media (min-width: 576px) {
+  .download-btn {
+    align-self: auto;
+  }
 }
 
 .download-btn:hover:not(:disabled) {
@@ -85,8 +109,20 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-height: 300px;
+  max-height: 250px;
   overflow-y: auto;
+}
+
+@media (min-width: 576px) {
+  .pages-summary {
+    max-height: 300px;
+  }
+}
+
+@media (min-width: 768px) {
+  .pages-summary {
+    max-height: 400px;
+  }
 }
 
 .page-item {
@@ -116,10 +152,16 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.35rem 0.6rem;
   background: #fff3cd;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 575px) {
+  .match-tag {
+    font-size: 0.8rem;
+  }
 }
 
 .match-type {
