@@ -8,8 +8,7 @@ cffi>=1.15.0
 pytest>=7.4.0
 httpx>=0.25.0
 
-# Optional: OCR support (uncomment if needed)
-# easyocr>=1.7.0
-# pdf2image>=1.16.0
-# Pillow>=10.0.0
-# numpy>=1.24.0
+# OCR support for image-based PDFs
+pytesseract>=0.3.10
+pdf2image>=1.16.0
+Pillow>=10.0.0

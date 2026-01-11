@@ -104,6 +104,27 @@
   font-size: 0.9rem;
 }
 
+.warnings-section {
+  padding: 1rem;
+  background: #fff3cd;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.warning-message {
+  font-size: 0.9rem;
+  color: #856404;
+  padding: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.warning-message:first-child {
+  padding-top: 0;
+}
+
+.warning-message:last-child {
+  padding-bottom: 0;
+}
+
 .pages-summary {
   padding: 1rem;
   display: flex;

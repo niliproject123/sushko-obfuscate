@@ -156,16 +156,29 @@ class TestReplacementMapper:
         assert fake1 != fake2
 
     def test_get_all_mappings(self):
-        """Test retrieving all mappings."""
+        """Test retrieving all mappings - should only include USED mappings."""
         mapper = ReplacementMapper(
-            user_mappings={"מיכאל": "דוד"}
+            user_mappings={"מיכאל": "דוד", "שרה": "רחל"}
         )
-        mapper.get_replacement("טלפון", "PHONE", "phone")
+
+        # Use one user mapping and create one auto mapping
+        mapper.get_replacement("מיכאל", "NAME", "hebrew_first_name")  # Uses user mapping
+        mapper.get_replacement("טלפון", "PHONE", "phone")  # Creates auto mapping
 
         all_mappings = mapper.get_all_mappings()
 
+        # Should include the user mapping that was actually used
         assert "מיכאל" in all_mappings
+        assert all_mappings["מיכאל"] == "דוד"
+
+        # Should include the auto-generated mapping
         assert "טלפון" in all_mappings
+
+        # Should NOT include the unused user mapping
+        assert "שרה" not in all_mappings  # This was configured but never used
+
+        # Total should be 2 (not 3)
+        assert len(all_mappings) == 2
 
 
 class TestTextObfuscator:

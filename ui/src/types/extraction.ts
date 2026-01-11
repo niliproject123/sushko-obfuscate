@@ -21,6 +21,7 @@ export interface ExtractResponse {
   total_matches: number;
   pages: PageSummary[];
   mappings_used?: Record<string, string>;
+  warnings?: string[];
 }
 
 export interface FileProcessingResult {

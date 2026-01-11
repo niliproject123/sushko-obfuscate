@@ -29,6 +29,9 @@ class ReplacementMapper:
         # Auto-assigned mappings (original -> fake)
         self._auto_mappings: dict[str, str] = {}
 
+        # Track which user mappings were actually used
+        self._used_user_mappings: dict[str, str] = {}
+
         # Track pool usage indices per type
         self._pool_indices: dict[str, int] = {
             "name_hebrew_first": 0,
@@ -67,7 +70,10 @@ class ReplacementMapper:
 
         # 1. Check user-defined mappings first
         if original_clean in self.user_mappings:
-            return self.user_mappings[original_clean]
+            replacement = self.user_mappings[original_clean]
+            # Track that this user mapping was actually used
+            self._used_user_mappings[original_clean] = replacement
+            return replacement
 
         # 2. Check if we already assigned a fake for this original
         if original_clean in self._auto_mappings:
@@ -157,12 +163,13 @@ class ReplacementMapper:
 
     def get_all_mappings(self) -> dict[str, str]:
         """
-        Get all mappings (user-defined + auto-assigned).
+        Get all mappings that were actually used during processing.
+        Returns only user-defined mappings that were looked up + auto-assigned mappings.
         Useful for returning in API response.
         """
         all_mappings = {}
         all_mappings.update(self._auto_mappings)
-        all_mappings.update(self.user_mappings)  # User mappings override
+        all_mappings.update(self._used_user_mappings)  # Only user mappings that were actually used
         return all_mappings
 
     def get_auto_mappings(self) -> dict[str, str]:
