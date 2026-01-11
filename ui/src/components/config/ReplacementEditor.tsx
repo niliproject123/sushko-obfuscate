@@ -6,23 +6,30 @@ interface ReplacementEditorProps {
   onChange: (replacements: Record<string, string>) => void;
   title?: string;
   description?: string;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 export function ReplacementEditor({
   replacements,
   onChange,
-  title = 'Custom Replacements',
-  description = 'Define specific text to find and replace',
+  title = 'החלפות מותאמות אישית',
+  description = 'הגדר טקסט לחיפוש והחלפה',
+  collapsible = false,
+  defaultCollapsed = false,
 }: ReplacementEditorProps) {
   const [newPattern, setNewPattern] = useState('');
   const [newReplacement, setNewReplacement] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
-  const entries = Object.entries(replacements);
+  // Handle null/undefined replacements safely
+  const safeReplacements = replacements || {};
+  const entries = Object.entries(safeReplacements);
 
   const handleAdd = () => {
     if (newPattern.trim()) {
       onChange({
-        ...replacements,
+        ...safeReplacements,
         [newPattern.trim()]: newReplacement.trim(),
       });
       setNewPattern('');
@@ -31,12 +38,12 @@ export function ReplacementEditor({
   };
 
   const handleRemove = (pattern: string) => {
-    const { [pattern]: _, ...rest } = replacements;
+    const { [pattern]: _, ...rest } = safeReplacements;
     onChange(rest);
   };
 
   const handleUpdate = (oldPattern: string, newValue: string) => {
-    const updated = { ...replacements };
+    const updated = { ...safeReplacements };
     updated[oldPattern] = newValue;
     onChange(updated);
   };
@@ -48,69 +55,92 @@ export function ReplacementEditor({
     }
   };
 
-  return (
-    <div className="replacement-editor">
-      <h3>{title}</h3>
-      {description && <p className="description">{description}</p>}
-
-      <div className="replacement-list">
-        {entries.map(([pattern, replacement]) => (
-          <div key={pattern} className="replacement-row">
-            <input
-              type="text"
-              value={pattern}
-              disabled
-              className="pattern-input"
-              placeholder="Find..."
-            />
-            <span className="arrow">&rarr;</span>
-            <input
-              type="text"
-              value={replacement}
-              onChange={(e) => handleUpdate(pattern, e.target.value)}
-              className="replacement-input"
-              placeholder="Replace with..."
-            />
-            <button
-              type="button"
-              onClick={() => handleRemove(pattern)}
-              className="remove-btn"
-              title="Remove"
-            >
-              &times;
-            </button>
-          </div>
-        ))}
-
-        <div className="replacement-row new-row">
+  const content = (
+    <div className="replacement-list">
+      {entries.map(([pattern, replacement]) => (
+        <div key={pattern} className="replacement-row">
           <input
             type="text"
-            value={newPattern}
-            onChange={(e) => setNewPattern(e.target.value)}
-            onKeyDown={handleKeyDown}
+            value={pattern}
+            disabled
             className="pattern-input"
-            placeholder="Find text..."
+            placeholder="חפש..."
           />
           <span className="arrow">&rarr;</span>
           <input
             type="text"
-            value={newReplacement}
-            onChange={(e) => setNewReplacement(e.target.value)}
-            onKeyDown={handleKeyDown}
+            value={replacement}
+            onChange={(e) => handleUpdate(pattern, e.target.value)}
             className="replacement-input"
-            placeholder="Replace with..."
+            placeholder="החלף ב..."
           />
           <button
             type="button"
-            onClick={handleAdd}
-            className="add-btn"
-            disabled={!newPattern.trim()}
-            title="Add"
+            onClick={() => handleRemove(pattern)}
+            className="remove-btn"
+            title="הסר"
           >
-            +
+            &times;
           </button>
         </div>
+      ))}
+
+      <div className="replacement-row new-row">
+        <input
+          type="text"
+          value={newPattern}
+          onChange={(e) => setNewPattern(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="pattern-input"
+          placeholder="טקסט לחיפוש..."
+        />
+        <span className="arrow">&rarr;</span>
+        <input
+          type="text"
+          value={newReplacement}
+          onChange={(e) => setNewReplacement(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="replacement-input"
+          placeholder="החלף ב..."
+        />
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="add-btn"
+          disabled={!newPattern.trim()}
+          title="הוסף"
+        >
+          +
+        </button>
       </div>
+    </div>
+  );
+
+  if (collapsible) {
+    return (
+      <div className="replacement-editor collapsible">
+        <button
+          type="button"
+          className="collapsible-header"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <span className="collapse-icon">{isCollapsed ? '▶' : '▼'}</span>
+          <h3>{title}</h3>
+          {entries.length > 0 && (
+            <span className="count-badge">{entries.length}</span>
+          )}
+        </button>
+        {description && !isCollapsed && <p className="description">{description}</p>}
+        {!isCollapsed && content}
+      </div>
+    );
+  }
+
+  return (
+    <div className="replacement-editor">
+      <h3>{title}</h3>
+      {description && <p className="description">{description}</p>}
+      {content}
     </div>
   );
 }

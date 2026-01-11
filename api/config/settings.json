@@ -171,6 +171,14 @@
       "capture_group": 1,
       "enabled": true,
       "validator": null
+    },
+    {
+      "name": "doctor_name",
+      "pii_type": "NAME",
+      "regex": "ד\"?ר\\.?\\s+([\\u0590-\\u05FF']+(?:\\s+[\\u0590-\\u05FF']+)?)",
+      "capture_group": 1,
+      "enabled": true,
+      "validator": null
     }
   ],
   "replacement_pools": {

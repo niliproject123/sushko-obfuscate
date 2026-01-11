@@ -21,9 +21,19 @@ export function PoolEditor({ pools, onUpdate }: PoolEditorProps) {
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Handle null/undefined pools safely
+  const safePools = pools || {
+    name_hebrew_first: [],
+    name_hebrew_last: [],
+    name_english_first: [],
+    name_english_last: [],
+    city: [],
+    street: [],
+  };
+
   const handleEdit = (poolName: keyof ReplacementPoolsConfig) => {
     setEditingPool(poolName);
-    setEditValue(pools[poolName].join('\n'));
+    setEditValue(safePools[poolName]?.join('\n') || '');
   };
 
   const handleCancel = () => {
@@ -89,11 +99,11 @@ export function PoolEditor({ pools, onUpdate }: PoolEditorProps) {
           <div key={poolName} className="pool-item">
             <div className="pool-info">
               <span className="pool-name">{POOL_LABELS[poolName]}</span>
-              <span className="pool-count">{pools[poolName].length} values</span>
+              <span className="pool-count">{(safePools[poolName] || []).length} values</span>
             </div>
             <div className="pool-preview">
-              {pools[poolName].slice(0, 5).join(', ')}
-              {pools[poolName].length > 5 && '...'}
+              {(safePools[poolName] || []).slice(0, 5).join(', ')}
+              {(safePools[poolName] || []).length > 5 && '...'}
             </div>
             <button
               type="button"

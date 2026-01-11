@@ -15,8 +15,12 @@ export function SettingsPanel({
   onUpdateOcr,
   onUpdatePlaceholders,
 }: SettingsPanelProps) {
-  const [localOcr, setLocalOcr] = useState(ocr);
-  const [localPlaceholders, setLocalPlaceholders] = useState(placeholders);
+  // Handle null/undefined values safely
+  const safeOcr = ocr || { enabled: false, languages: ['heb', 'eng'], dpi: 300, min_text_threshold: 50 };
+  const safePlaceholders = placeholders || {};
+
+  const [localOcr, setLocalOcr] = useState(safeOcr);
+  const [localPlaceholders, setLocalPlaceholders] = useState(safePlaceholders);
   const [saving, setSaving] = useState<string | null>(null);
 
   const handleSaveOcr = async () => {
