@@ -22,12 +22,14 @@ export function ReplacementEditor({
   const [newReplacement, setNewReplacement] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
-  const entries = Object.entries(replacements);
+  // Handle null/undefined replacements safely
+  const safeReplacements = replacements || {};
+  const entries = Object.entries(safeReplacements);
 
   const handleAdd = () => {
     if (newPattern.trim()) {
       onChange({
-        ...replacements,
+        ...safeReplacements,
         [newPattern.trim()]: newReplacement.trim(),
       });
       setNewPattern('');
@@ -36,12 +38,12 @@ export function ReplacementEditor({
   };
 
   const handleRemove = (pattern: string) => {
-    const { [pattern]: _, ...rest } = replacements;
+    const { [pattern]: _, ...rest } = safeReplacements;
     onChange(rest);
   };
 
   const handleUpdate = (oldPattern: string, newValue: string) => {
-    const updated = { ...replacements };
+    const updated = { ...safeReplacements };
     updated[oldPattern] = newValue;
     onChange(updated);
   };
