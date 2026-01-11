@@ -58,7 +58,7 @@ function App() {
   return (
     <div className="app" dir="rtl">
       <header className="header">
-        <h1>מחלץ טקסט מ-PDF</h1>
+        <h1>סושקו - מחלץ טקסט מ-PDF</h1>
         <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
       </header>
 
