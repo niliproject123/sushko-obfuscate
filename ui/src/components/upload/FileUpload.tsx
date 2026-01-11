@@ -70,9 +70,9 @@ export function FileUpload({ files, onFilesAdd, onClear, disabled = false }: Fil
       >
         <div className="upload-icon">📄</div>
         <p className="upload-text">
-          Drag and drop PDF files here, or click to browse
+          גרור ושחרר קבצי PDF לכאן, או לחץ לבחירה
         </p>
-        <p className="upload-hint">Multiple files supported</p>
+        <p className="upload-hint">ניתן להעלות מספר קבצים</p>
         <input
           ref={inputRef}
           type="file"
@@ -86,9 +86,9 @@ export function FileUpload({ files, onFilesAdd, onClear, disabled = false }: Fil
       {files.length > 0 && (
         <div className="file-list">
           <div className="file-list-header">
-            <span>{files.length} file{files.length !== 1 ? 's' : ''} selected</span>
+            <span>{files.length} קובץ{files.length !== 1 ? 'ים' : ''} נבחר{files.length !== 1 ? 'ו' : ''}</span>
             <button type="button" onClick={onClear} className="clear-btn">
-              Clear All
+              נקה הכל
             </button>
           </div>
           <ul>

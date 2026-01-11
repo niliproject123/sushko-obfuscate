@@ -71,6 +71,40 @@
   color: #721c24;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-self: stretch;
+}
+
+@media (min-width: 576px) {
+  .action-buttons {
+    align-self: auto;
+  }
+}
+
+.copy-btn {
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+@media (min-width: 576px) {
+  .copy-btn {
+    flex: none;
+  }
+}
+
+.copy-btn:hover {
+  background: #5a6268;
+}
+
 .download-btn {
   min-height: 44px;
   padding: 0.75rem 1rem;
@@ -80,12 +114,12 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
-  align-self: stretch;
+  flex: 1;
 }
 
 @media (min-width: 576px) {
   .download-btn {
-    align-self: auto;
+    flex: none;
   }
 }
 

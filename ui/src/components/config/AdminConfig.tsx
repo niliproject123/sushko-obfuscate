@@ -35,7 +35,7 @@ export function AdminConfig({
   if (loading && !config) {
     return (
       <div className="admin-config">
-        <div className="loading">Loading configuration...</div>
+        <div className="loading">טוען תצורה...</div>
       </div>
     );
   }
@@ -44,9 +44,9 @@ export function AdminConfig({
     return (
       <div className="admin-config">
         <div className="error">
-          <p>Failed to load configuration: {error}</p>
+          <p>נכשל בטעינת התצורה: {error}</p>
           <button type="button" onClick={onRefresh}>
-            Retry
+            נסה שוב
           </button>
         </div>
       </div>
@@ -54,7 +54,11 @@ export function AdminConfig({
   }
 
   if (!config) {
-    return null;
+    return (
+      <div className="admin-config">
+        <div className="loading">לא נמצאה תצורה. ודא שהשרת פועל.</div>
+      </div>
+    );
   }
 
   return (
@@ -69,8 +73,10 @@ export function AdminConfig({
         <ReplacementEditor
           replacements={config.default_replacements}
           onChange={onUpdateDefaultReplacements}
-          title="Default Replacements"
-          description="Global replacements applied to all requests (can be overridden by users)"
+          title="החלפות ברירת מחדל"
+          description="החלפות גלובליות המופעלות על כל הבקשות (ניתן לדרוס על ידי משתמשים)"
+          collapsible={true}
+          defaultCollapsed={true}
         />
       </div>
 

@@ -21,17 +21,17 @@ export function ProcessingStatus({ results, processing }: ProcessingStatusProps)
         <>
           <div className="spinner"></div>
           <div className="status-text">
-            <span className="status-main">Processing your PDFs...</span>
+            <span className="status-main">מעבד את קבצי ה-PDF שלך...</span>
             <span className="status-detail">
-              {completed} of {total} completed
-              {errors > 0 && `, ${errors} error${errors !== 1 ? 's' : ''}`}
+              {completed} מתוך {total} הושלמו
+              {errors > 0 && `, ${errors} שגיא${errors !== 1 ? 'ות' : 'ה'}`}
             </span>
           </div>
         </>
       ) : (
         <div className="status-complete">
-          Processing complete: {completed} succeeded
-          {errors > 0 && `, ${errors} failed`}
+          העיבוד הושלם: {completed} הצליחו
+          {errors > 0 && `, ${errors} נכשלו`}
         </div>
       )}
     </div>

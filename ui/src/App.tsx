@@ -11,8 +11,8 @@ import { useFileProcessor } from './hooks/useFileProcessor';
 import './App.css';
 
 const TABS: Tab[] = [
-  { id: 'user', label: 'User Config' },
-  { id: 'admin', label: 'Admin Config' },
+  { id: 'user', label: 'הגדרות משתמש' },
+  { id: 'admin', label: 'הגדרות מנהל' },
 ];
 
 function App() {
@@ -56,13 +56,31 @@ function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app" dir="rtl">
       <header className="header">
-        <h1>PDF Text Extractor</h1>
-        <p>Extract and obfuscate PII from PDF documents</p>
+        <h1>מחלץ טקסט מ-PDF</h1>
+        <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
       </header>
 
       <main className="main">
+        <section className="card info-section">
+          <h2>איך זה עובד?</h2>
+          <div className="info-content">
+            <p>
+              <strong>1. העלאת קובץ:</strong> העלה קבצי PDF שברצונך לעבד
+            </p>
+            <p>
+              <strong>2. הגדרות אישיות:</strong> הוסף החלפות טקסט מותאמות אישית או השבת גלאים מסוימים
+            </p>
+            <p>
+              <strong>3. עיבוד:</strong> לחץ על "עבד" והמערכת תזהה ותחליף מידע אישי מזהה (ת.ז., טלפון, שמות, כתובות ועוד)
+            </p>
+            <p>
+              <strong>4. הורדה:</strong> הורד את הקובץ המעובד עם המידע המוסתר
+            </p>
+          </div>
+        </section>
+
         <section className="card">
           <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -94,7 +112,7 @@ function App() {
         </section>
 
         <section className="card">
-          <h2>Upload PDFs</h2>
+          <h2>העלאת קבצי PDF</h2>
           <FileUpload
             files={files}
             onFilesAdd={addFiles}
@@ -109,7 +127,7 @@ function App() {
             onClick={handleProcess}
             disabled={files.length === 0 || processing}
           >
-            {processing ? 'Processing...' : `Process ${files.length || ''} PDF${files.length !== 1 ? 's' : ''}`}
+            {processing ? 'מעבד...' : `עבד ${files.length || ''} קובץ PDF${files.length !== 1 ? 'ים' : ''}`}
           </button>
         </section>
 
