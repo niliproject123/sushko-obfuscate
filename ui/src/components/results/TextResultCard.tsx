@@ -1,29 +1,14 @@
 import { useState } from 'react';
-import type { FileProcessingResult } from '../../types';
-import { downloadFile } from '../../services/extractApi';
-import './FileResultCard.css';
+import type { TextProcessingResult } from '../../types';
+import './TextResultCard.css';
 
-interface FileResultCardProps {
-  result: FileProcessingResult;
+interface TextResultCardProps {
+  result: TextProcessingResult;
 }
 
-export function FileResultCard({ result }: FileResultCardProps) {
-  const [downloading, setDownloading] = useState(false);
+export function TextResultCard({ result }: TextResultCardProps) {
   const [copiedMappings, setCopiedMappings] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
-
-  const handleDownload = async () => {
-    if (!result.response?.file_id) return;
-
-    setDownloading(true);
-    try {
-      await downloadFile(result.response.file_id, result.file.name);
-    } catch (err) {
-      console.error('Download failed:', err);
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   const handleCopyMappings = async () => {
     if (!result.response) return;
@@ -32,10 +17,9 @@ export function FileResultCard({ result }: FileResultCardProps) {
     const mappings = response.mappings_used || {};
     const mappingEntries = Object.entries(mappings);
 
-    // Format the text for clipboard
-    let text = `קובץ: ${result.file.name}\n`;
+    // Format the mappings for clipboard
+    let text = `סיכום שינויים:\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `עמודים: ${response.page_count}\n`;
     text += `התאמות: ${response.total_matches}\n`;
     text += `החלפות ייחודיות: ${mappingEntries.length}\n`;
 
@@ -44,13 +28,6 @@ export function FileResultCard({ result }: FileResultCardProps) {
       text += `─────────────────────────────\n`;
       mappingEntries.forEach(([original, replacement]) => {
         text += `${original} → ${replacement}\n`;
-      });
-    }
-
-    if (response.warnings && response.warnings.length > 0) {
-      text += `\nאזהרות:\n`;
-      response.warnings.forEach(warning => {
-        text += `⚠️ ${warning}\n`;
       });
     }
 
@@ -77,9 +54,9 @@ export function FileResultCard({ result }: FileResultCardProps) {
 
   if (result.status === 'processing') {
     return (
-      <div className="file-result-card processing">
+      <div className="text-result-card processing">
         <div className="card-header">
-          <span className="file-name">{result.file.name}</span>
+          <span className="title">טקסט מודבק</span>
           <span className="status-badge processing">מעבד...</span>
         </div>
       </div>
@@ -88,9 +65,9 @@ export function FileResultCard({ result }: FileResultCardProps) {
 
   if (result.status === 'error') {
     return (
-      <div className="file-result-card error">
+      <div className="text-result-card error">
         <div className="card-header">
-          <span className="file-name">{result.file.name}</span>
+          <span className="title">טקסט מודבק</span>
           <span className="status-badge error">שגיאה</span>
         </div>
         <div className="error-message">{result.error}</div>
@@ -103,18 +80,15 @@ export function FileResultCard({ result }: FileResultCardProps) {
   }
 
   const { response } = result;
-
-  // Get unique mappings from mappings_used (consolidated per PDF)
   const mappings = response.mappings_used || {};
   const mappingEntries = Object.entries(mappings);
 
   return (
-    <div className="file-result-card success">
+    <div className="text-result-card success">
       <div className="card-header">
-        <div className="file-info">
-          <span className="file-name">{result.file.name}</span>
+        <div className="result-info">
+          <span className="title">טקסט מודבק</span>
           <span className="stats">
-            {response.page_count} עמוד{response.page_count !== 1 ? 'ים' : ''} •{' '}
             {response.total_matches} התאמ{response.total_matches !== 1 ? 'ות' : 'ה'} •{' '}
             {mappingEntries.length} החלפ{mappingEntries.length !== 1 ? 'ות' : 'ה'} ייחודי{mappingEntries.length !== 1 ? 'ות' : 'ת'}
           </span>
@@ -133,17 +107,8 @@ export function FileResultCard({ result }: FileResultCardProps) {
             onClick={handleCopyText}
             className="copy-btn copy-text"
             title="העתק טקסט מעובד"
-            disabled={!result.response?.obfuscated_text}
           >
             {copiedText ? '✓ הועתק' : 'העתק טקסט'}
-          </button>
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="download-btn"
-            disabled={downloading}
-          >
-            {downloading ? 'מוריד...' : 'הורד'}
           </button>
         </div>
       </div>
@@ -159,17 +124,24 @@ export function FileResultCard({ result }: FileResultCardProps) {
       )}
 
       {mappingEntries.length > 0 && (
-        <div className="pages-summary">
-          <div className="page-item">
-            <span className="page-number">שינויים</span>
-            <div className="matches">
-              {mappingEntries.map(([original, replacement], idx) => (
-                <span key={idx} className="match-tag">
-                  <span className="match-text">{original}</span>
-                  <span className="match-replacement">← {replacement}</span>
-                </span>
-              ))}
-            </div>
+        <div className="mappings-section">
+          <div className="section-title">שינויים שבוצעו</div>
+          <div className="mappings-list">
+            {mappingEntries.map(([original, replacement], idx) => (
+              <span key={idx} className="match-tag">
+                <span className="match-text">{original}</span>
+                <span className="match-replacement">← {replacement}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {response.obfuscated_text && (
+        <div className="obfuscated-text-section">
+          <div className="section-title">טקסט מעובד</div>
+          <div className="obfuscated-text" dir="rtl">
+            {response.obfuscated_text}
           </div>
         </div>
       )}

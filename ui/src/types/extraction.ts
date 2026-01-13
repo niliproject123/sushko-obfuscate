@@ -22,11 +22,26 @@ export interface ExtractResponse {
   pages: PageSummary[];
   mappings_used?: Record<string, string>;
   warnings?: string[];
+  obfuscated_text?: string;
+}
+
+export interface PlainTextResponse {
+  total_matches: number;
+  mappings_used: Record<string, string>;
+  obfuscated_text: string;
+  warnings?: string[];
 }
 
 export interface FileProcessingResult {
   file: File;
   response?: ExtractResponse;
+  error?: string;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+}
+
+export interface TextProcessingResult {
+  text: string;
+  response?: PlainTextResponse;
   error?: string;
   status: 'pending' | 'processing' | 'completed' | 'error';
 }

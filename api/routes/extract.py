@@ -69,6 +69,7 @@ class ExtractResponse(BaseModel):
     pages: list[PageSummary]
     mappings_used: dict[str, str]  # original -> replacement
     warnings: list[str] = Field(default_factory=list)
+    obfuscated_text: str = ""  # Full obfuscated text for copy functionality
 
 
 # ============================================================================
@@ -248,6 +249,11 @@ async def extract_and_obfuscate(
 
         total_matches += len(all_matches)
 
+    # Collect all obfuscated text
+    full_obfuscated_text = "\n\n".join(
+        page.processed_text for page in processed_pages
+    )
+
     # Reassemble PDF and save
     output_content = processor.reassemble(processed_pages)
     file_id = storage.save(output_content)
@@ -259,6 +265,7 @@ async def extract_and_obfuscate(
         pages=page_summaries,
         mappings_used=mapper.get_all_mappings(),
         warnings=warnings,
+        obfuscated_text=full_obfuscated_text,
     )
 
 
@@ -290,3 +297,84 @@ async def extract_text_only(
     # This is identical to extract_and_obfuscate but could return
     # processed text directly instead of generating PDF
     return await extract_and_obfuscate(file=file, config=config)
+
+
+class PlainTextRequest(BaseModel):
+    """Request model for plain text extraction."""
+    text: str
+    config: ExtractRequestConfig = Field(default_factory=ExtractRequestConfig)
+
+
+class PlainTextResponse(BaseModel):
+    """Response model for plain text extraction."""
+    total_matches: int
+    mappings_used: dict[str, str]
+    obfuscated_text: str
+    warnings: list[str] = Field(default_factory=list)
+
+
+@router.post("/extract/plain", response_model=PlainTextResponse)
+async def extract_plain_text(request: PlainTextRequest):
+    """
+    Process plain text and obfuscate PII.
+
+    Args:
+        request: The plain text to process with optional config
+
+    Returns:
+        Obfuscated text with mappings
+    """
+    # Get merged configuration
+    merged_config = get_merged_config(request.config)
+
+    # Create detector from patterns
+    regex_detector = RegexDetector(patterns=merged_config.patterns)
+
+    # Create user-defined detector if there are user replacements
+    user_detector = None
+    if merged_config.user_replacements:
+        user_terms = [
+            {"text": original, "type": "USER_DEFINED"}
+            for original in merged_config.user_replacements.keys()
+        ]
+        user_detector = UserDefinedDetector(terms=user_terms)
+
+    # Create replacement mapper
+    mapper = ReplacementMapper(
+        user_mappings=merged_config.user_replacements,
+        pools=merged_config.replacement_pools,
+    )
+
+    # Create obfuscator with mapper
+    obfuscator = TextObfuscator(mapper=mapper)
+
+    # Process the text
+    text = request.text
+    all_matches: list[PIIMatch] = []
+
+    # User-defined matches first (take priority)
+    if user_detector:
+        user_matches = user_detector.detect(text)
+        all_matches.extend(user_matches)
+
+    # Pattern-based detection
+    pattern_matches = regex_detector.detect(text)
+
+    # Filter out matches that overlap with existing matches
+    for new_match in pattern_matches:
+        overlaps = any(
+            (new_match.start < existing.end and new_match.end > existing.start)
+            for existing in all_matches
+        )
+        if not overlaps:
+            all_matches.append(new_match)
+
+    # Obfuscate text
+    obfuscated_text = obfuscator.obfuscate(text, all_matches)
+
+    return PlainTextResponse(
+        total_matches=len(all_matches),
+        mappings_used=mapper.get_all_mappings(),
+        obfuscated_text=obfuscated_text,
+        warnings=[],
+    )

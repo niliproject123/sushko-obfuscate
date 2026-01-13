@@ -86,7 +86,6 @@
 .copy-btn {
   min-height: 44px;
   padding: 0.75rem 1rem;
-  background: #6c757d;
   color: white;
   border: none;
   border-radius: 4px;
@@ -101,8 +100,25 @@
   }
 }
 
-.copy-btn:hover {
+.copy-btn.copy-mappings {
+  background: #6c757d;
+}
+
+.copy-btn.copy-mappings:hover {
   background: #5a6268;
+}
+
+.copy-btn.copy-text {
+  background: #17a2b8;
+}
+
+.copy-btn.copy-text:hover:not(:disabled) {
+  background: #138496;
+}
+
+.copy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .download-btn {

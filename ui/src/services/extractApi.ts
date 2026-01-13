@@ -1,7 +1,7 @@
 // Extraction API endpoints
 
 import { apiPost } from './api';
-import type { ExtractResponse } from '../types';
+import type { ExtractResponse, PlainTextResponse } from '../types';
 
 export interface ExtractRequestConfig {
   user_replacements?: Record<string, string>;
@@ -21,6 +21,16 @@ export async function extractPdf(
   }
 
   return apiPost<ExtractResponse>('/extract', formData);
+}
+
+export async function extractPlainText(
+  text: string,
+  config?: ExtractRequestConfig
+): Promise<PlainTextResponse> {
+  return apiPost<PlainTextResponse>('/extract/plain', {
+    text,
+    config: config || {},
+  });
 }
 
 export function getDownloadUrl(fileId: string): string {

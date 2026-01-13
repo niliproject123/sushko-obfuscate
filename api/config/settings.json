@@ -179,6 +179,38 @@
       "capture_group": 1,
       "enabled": true,
       "validator": null
+    },
+    {
+      "name": "age_years",
+      "pii_type": "AGE",
+      "regex": "(?:בן|בת|גיל)\\s*(\\d{1,3})(?:\\s*(?:שנים|שנה))?",
+      "capture_group": 1,
+      "enabled": true,
+      "validator": null
+    },
+    {
+      "name": "age_standalone",
+      "pii_type": "AGE",
+      "regex": "גיל\\s*[:\\-]?\\s*(\\d{1,3})",
+      "capture_group": 1,
+      "enabled": true,
+      "validator": null
+    },
+    {
+      "name": "military_unit",
+      "pii_type": "MILITARY_UNIT",
+      "regex": "(?:יחידה|חטיבה|גדוד|פלוגה|פלוגת|חיל)\\s*[:\\-]?\\s*([\\u0590-\\u05FF'\"\\s]+?)(?=\\s*[,\\.\\n]|$)",
+      "capture_group": 1,
+      "enabled": true,
+      "validator": null
+    },
+    {
+      "name": "military_unit_known",
+      "pii_type": "MILITARY_UNIT",
+      "regex": "\\b(צנחנים|גולני|גבעתי|נח\"ל|שריון|חי\"ר|תותחנים|הנדסה|חיל האוויר|חיל הים|מודיעין|קרקל|לביא|כפיר|עוצבת הבשן|עוצבת הגולן|עוצבת עזה|עוצבת יהודה ושומרון|סיירת מטכ\"ל|שייטת 13|סיירת גולני|סיירת צנחנים|סיירת גבעתי|מגלן|אגוז|דובדבן|רימון|יהלו\"ם|עוקץ|669|Unit 8200|יחידה 8200|8200)\\b",
+      "capture_group": 1,
+      "enabled": true,
+      "validator": null
     }
   ],
   "replacement_pools": {
@@ -187,7 +219,9 @@
     "name_english_first": ["David", "Sarah", "Joseph", "Rachel", "Michael", "Mary", "John", "Jane", "Robert", "Emily"],
     "name_english_last": ["Cohen", "Levy", "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller"],
     "city": ["רמת גן", "תל אביב", "חיפה", "ירושלים", "באר שבע", "נתניה", "אשדוד", "פתח תקווה"],
-    "street": ["הרצל", "ויצמן", "בן גוריון", "רוטשילד", "אלנבי", "דיזנגוף", "ז'בוטינסקי", "סוקולוב"]
+    "street": ["הרצל", "ויצמן", "בן גוריון", "רוטשילד", "אלנבי", "דיזנגוף", "ז'בוטינסקי", "סוקולוב"],
+    "age": ["25", "30", "35", "40", "45", "50", "55", "28", "33", "38"],
+    "military_unit": ["יחידה א", "יחידה ב", "יחידה ג", "חטיבה 1", "חטיבה 2", "גדוד 100", "גדוד 200"]
   },
   "ocr": {
     "enabled": true,
@@ -205,6 +239,8 @@
     "CASE_NUMBER": "[CASE]",
     "BANK_ACCOUNT": "[BANK_ACCOUNT]",
     "BANK_BRANCH": "[BANK_BRANCH]",
+    "AGE": "[AGE]",
+    "MILITARY_UNIT": "[UNIT]",
     "DEFAULT": "[REDACTED]"
   }
 }
