@@ -21,9 +21,14 @@ const INPUT_TABS: Tab[] = [
   { id: 'text', label: 'טקסט' },
 ];
 
+const ADMIN_PASSWORD = 'a1b2c3';
+
 function App() {
   const [activeTab, setActiveTab] = useState('user');
   const [inputMode, setInputMode] = useState<'pdf' | 'text'>('pdf');
+  const [showConfig, setShowConfig] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
   // User config (localStorage)
   const {
@@ -50,6 +55,7 @@ function App() {
     deleteCategory,
     addWordToCategory,
     removeWordFromCategory,
+    toggleCategory,
   } = useAdminConfig();
 
   // File processor
@@ -96,51 +102,107 @@ function App() {
           <h2>איך זה עובד?</h2>
           <div className="info-content">
             <p>
-              <strong>1. העלאת קובץ:</strong> העלה קבצי PDF שברצונך לעבד
+              <strong>1. בחר סוג קלט:</strong> העלה קובץ PDF או הדבק טקסט ישירות
             </p>
             <p>
-              <strong>2. הגדרות אישיות (אופציונלי):</strong> ניתן להוסיף החלפות טקסט מותאמות אישית או להשבית גלאים מסוימים - המערכת תעבוד גם בלי הגדרות נוספות
+              <strong>2. הגדרות (אופציונלי):</strong> ניתן להוסיף החלפות מותאמות אישית או להשבית גלאים - המערכת תעבוד גם בלי הגדרות נוספות
             </p>
             <p>
-              <strong>3. עיבוד:</strong> לחץ על "עבד" והמערכת תזהה ותחליף מידע אישי מזהה (ת.ז., טלפון, שמות, כתובות ועוד)
+              <strong>3. עיבוד:</strong> לחץ "עבד" - המערכת תזהה ותחליף מידע אישי (ת.ז., טלפון, שמות, כתובות, יחידות צבאיות, גיל ועוד)
             </p>
             <p>
-              <strong>4. הורדה:</strong> הורד את הקובץ המעובד עם המידע המוסתר
+              <strong>4. העתקה/הורדה:</strong> השתמש בכפתורי ההעתקה - "העתק שינויים" לרשימת ההחלפות, "העתק טקסט" לטקסט המלא המעובד
             </p>
           </div>
         </section>
 
-        <section className="card">
-          <Tabs tabs={CONFIG_TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+        <section className="card config-section">
+          <button
+            type="button"
+            className="config-toggle"
+            onClick={() => setShowConfig(!showConfig)}
+          >
+            <span className="toggle-icon">{showConfig ? '▼' : '▶'}</span>
+            <span>הגדרות</span>
+          </button>
 
-          {activeTab === 'user' && (
-            <UserConfig
-              config={userConfig}
-              onReplacementsChange={setReplacements}
-              onToggleDetector={toggleDetector}
-              onForceOcrChange={setForceOcr}
-              availablePatterns={adminConfig?.patterns}
-            />
-          )}
+          {showConfig && (
+            <div className="config-content">
+              <Tabs
+                tabs={CONFIG_TABS}
+                activeTab={activeTab}
+                onTabChange={(id) => {
+                  if (id === 'admin' && !adminUnlocked) {
+                    return; // Don't switch until unlocked
+                  }
+                  setActiveTab(id);
+                }}
+              />
 
-          {activeTab === 'admin' && (
-            <AdminConfig
-              config={adminConfig}
-              loading={adminLoading}
-              error={adminError}
-              onRefresh={refreshAdminConfig}
-              onAddPattern={addPattern}
-              onUpdatePattern={updatePattern}
-              onDeletePattern={deletePattern}
-              onUpdatePool={updatePool}
-              onUpdateOcr={updateOcr}
-              onUpdatePlaceholders={updatePlaceholders}
-              onUpdateDefaultReplacements={updateDefaultReplacements}
-              onCreateCategory={createCategory}
-              onDeleteCategory={deleteCategory}
-              onAddWordToCategory={addWordToCategory}
-              onRemoveWordFromCategory={removeWordFromCategory}
-            />
+              {activeTab === 'user' && (
+                <UserConfig
+                  config={userConfig}
+                  onReplacementsChange={setReplacements}
+                  onToggleDetector={toggleDetector}
+                  onForceOcrChange={setForceOcr}
+                  availablePatterns={adminConfig?.patterns}
+                />
+              )}
+
+              {activeTab === 'admin' && !adminUnlocked && (
+                <div className="admin-password-form">
+                  <p>נדרשת סיסמה לגישה להגדרות מנהל</p>
+                  <div className="password-input-row">
+                    <input
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder="הזן סיסמה..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && passwordInput === ADMIN_PASSWORD) {
+                          setAdminUnlocked(true);
+                          setPasswordInput('');
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (passwordInput === ADMIN_PASSWORD) {
+                          setAdminUnlocked(true);
+                          setPasswordInput('');
+                        } else {
+                          alert('סיסמה שגויה');
+                        }
+                      }}
+                    >
+                      כניסה
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'admin' && adminUnlocked && (
+                <AdminConfig
+                  config={adminConfig}
+                  loading={adminLoading}
+                  error={adminError}
+                  onRefresh={refreshAdminConfig}
+                  onAddPattern={addPattern}
+                  onUpdatePattern={updatePattern}
+                  onDeletePattern={deletePattern}
+                  onUpdatePool={updatePool}
+                  onUpdateOcr={updateOcr}
+                  onUpdatePlaceholders={updatePlaceholders}
+                  onUpdateDefaultReplacements={updateDefaultReplacements}
+                  onCreateCategory={createCategory}
+                  onDeleteCategory={deleteCategory}
+                  onAddWordToCategory={addWordToCategory}
+                  onRemoveWordFromCategory={removeWordFromCategory}
+                  onToggleCategory={toggleCategory}
+                />
+              )}
+            </div>
           )}
         </section>
 

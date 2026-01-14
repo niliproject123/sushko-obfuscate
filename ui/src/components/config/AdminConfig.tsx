@@ -23,6 +23,7 @@ interface AdminConfigProps {
   onDeleteCategory: (name: string) => Promise<void>;
   onAddWordToCategory: (category: string, word: string) => Promise<void>;
   onRemoveWordFromCategory: (category: string, word: string) => Promise<void>;
+  onToggleCategory: (name: string) => Promise<void>;
 }
 
 export function AdminConfig({
@@ -41,6 +42,7 @@ export function AdminConfig({
   onDeleteCategory,
   onAddWordToCategory,
   onRemoveWordFromCategory,
+  onToggleCategory,
 }: AdminConfigProps) {
   if (loading && !config) {
     return (
@@ -82,10 +84,12 @@ export function AdminConfig({
       <div className="config-section">
         <CategoryEditor
           categories={config.categories || {}}
+          disabledCategories={config.disabled_categories || []}
           onCreateCategory={onCreateCategory}
           onDeleteCategory={onDeleteCategory}
           onAddWord={onAddWordToCategory}
           onRemoveWord={onRemoveWordFromCategory}
+          onToggleCategory={onToggleCategory}
         />
       </div>
 

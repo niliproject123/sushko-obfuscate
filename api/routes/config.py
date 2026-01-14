@@ -31,6 +31,7 @@ class ConfigResponse(BaseModel):
     ocr: OCRConfig
     placeholders: dict[str, str]
     categories: dict[str, list[str]] = Field(default_factory=dict)
+    disabled_categories: list[str] = Field(default_factory=list)
 
 
 class UpdateConfigRequest(BaseModel):
@@ -81,6 +82,7 @@ async def get_config():
         ocr=config.ocr,
         placeholders=config.placeholders,
         categories=config.categories,
+        disabled_categories=config.disabled_categories,
     )
 
 
@@ -115,6 +117,7 @@ async def update_config(request: UpdateConfigRequest):
         ocr=current.ocr,
         placeholders=current.placeholders,
         categories=current.categories,
+        disabled_categories=current.disabled_categories,
     )
 
 
@@ -349,3 +352,27 @@ async def remove_word_from_category(category_name: str, word: str):
     reload_server_config()
 
     return {"message": f"Word '{word}' removed from '{category_name}'"}
+
+
+@router.put("/config/categories/{category_name}/toggle")
+async def toggle_category(category_name: str):
+    """Toggle a category's enabled/disabled state."""
+    config = load_server_config()
+
+    if category_name not in config.categories:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Category '{category_name}' not found"
+        )
+
+    if category_name in config.disabled_categories:
+        config.disabled_categories.remove(category_name)
+        enabled = True
+    else:
+        config.disabled_categories.append(category_name)
+        enabled = False
+
+    save_server_config(config)
+    reload_server_config()
+
+    return {"category": category_name, "enabled": enabled}

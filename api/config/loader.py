@@ -52,6 +52,7 @@ def load_server_config() -> ServerConfig:
         ocr=settings.get("ocr", {}),
         placeholders=settings.get("placeholders", {}),
         categories=categories,
+        disabled_categories=settings.get("disabled_categories", []),
     )
 
 
@@ -74,10 +75,11 @@ def save_server_config(config: ServerConfig) -> None:
     with open(CATEGORIES_PATH, "w", encoding="utf-8") as f:
         json.dump(config.categories, f, ensure_ascii=False, indent=2)
 
-    # Save main settings (ocr + placeholders)
+    # Save main settings (ocr + placeholders + disabled_categories)
     settings = {
         "ocr": config.ocr.model_dump(),
         "placeholders": config.placeholders,
+        "disabled_categories": config.disabled_categories,
     }
     with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
         json.dump(settings, f, ensure_ascii=False, indent=2)
@@ -126,6 +128,7 @@ def merge_config(
         user_replacements=merged_replacements,
         force_ocr=force_ocr,
         categories=server_config.categories,
+        disabled_categories=server_config.disabled_categories,
     )
 
 

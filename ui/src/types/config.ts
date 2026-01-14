@@ -32,6 +32,7 @@ export interface ServerConfig {
   placeholders: Record<string, string>;
   default_replacements: Record<string, string>;
   categories: Record<string, string[]>;
+  disabled_categories: string[];
 }
 
 export interface RequestConfig {

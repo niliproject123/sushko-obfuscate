@@ -65,7 +65,7 @@ export function PatternEditor({
   };
 
   const handleDelete = async (name: string) => {
-    if (confirm(`Delete pattern "${name}"?`)) {
+    if (confirm(`למחוק את הדפוס "${name}"?`)) {
       await onDelete(name);
     }
   };
@@ -77,18 +77,18 @@ export function PatternEditor({
   return (
     <div className="pattern-editor">
       <div className="pattern-header">
-        <h3>Detection Patterns</h3>
+        <h3>דפוסי זיהוי</h3>
         <button type="button" onClick={handleNew} className="btn-add">
-          + Add Pattern
+          + הוסף דפוס
         </button>
       </div>
 
       {editingPattern && (
         <div className="pattern-form">
-          <h4>{isNew ? 'New Pattern' : 'Edit Pattern'}</h4>
+          <h4>{isNew ? 'דפוס חדש' : 'עריכת דפוס'}</h4>
           <div className="form-grid">
             <div className="form-field">
-              <label>Name</label>
+              <label>שם</label>
               <input
                 type="text"
                 value={editingPattern.name}
@@ -96,11 +96,11 @@ export function PatternEditor({
                   setEditingPattern({ ...editingPattern, name: e.target.value })
                 }
                 disabled={!isNew}
-                placeholder="e.g., israeli_id"
+                placeholder="לדוגמה: israeli_id"
               />
             </div>
             <div className="form-field">
-              <label>PII Type</label>
+              <label>סוג מידע אישי</label>
               <select
                 value={editingPattern.pii_type}
                 onChange={(e) =>
@@ -115,19 +115,19 @@ export function PatternEditor({
               </select>
             </div>
             <div className="form-field full-width">
-              <label>Regex Pattern</label>
+              <label>ביטוי רגולרי (Regex)</label>
               <input
                 type="text"
                 value={editingPattern.regex}
                 onChange={(e) =>
                   setEditingPattern({ ...editingPattern, regex: e.target.value })
                 }
-                placeholder="e.g., \b\d{9}\b"
+                placeholder="לדוגמה: \b\d{9}\b"
                 className="mono"
               />
             </div>
             <div className="form-field">
-              <label>Capture Group</label>
+              <label>קבוצת לכידה</label>
               <input
                 type="number"
                 value={editingPattern.capture_group}
@@ -141,7 +141,7 @@ export function PatternEditor({
               />
             </div>
             <div className="form-field">
-              <label>Validator</label>
+              <label>מאמת</label>
               <input
                 type="text"
                 value={editingPattern.validator || ''}
@@ -151,7 +151,7 @@ export function PatternEditor({
                     validator: e.target.value || null,
                   })
                 }
-                placeholder="e.g., israeli_id_checksum"
+                placeholder="לדוגמה: israeli_id_checksum"
               />
             </div>
             <div className="form-field">
@@ -163,13 +163,13 @@ export function PatternEditor({
                     setEditingPattern({ ...editingPattern, enabled: e.target.checked })
                   }
                 />
-                Enabled
+                פעיל
               </label>
             </div>
           </div>
           <div className="form-actions">
             <button type="button" onClick={handleCancel} className="btn-cancel">
-              Cancel
+              ביטול
             </button>
             <button
               type="button"
@@ -177,7 +177,7 @@ export function PatternEditor({
               className="btn-save"
               disabled={saving || !editingPattern.name || !editingPattern.regex}
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? 'שומר...' : 'שמור'}
             </button>
           </div>
         </div>
@@ -200,21 +200,21 @@ export function PatternEditor({
                 onClick={() => handleToggleEnabled(pattern)}
                 className={`btn-toggle ${pattern.enabled ? 'on' : 'off'}`}
               >
-                {pattern.enabled ? 'ON' : 'OFF'}
+                {pattern.enabled ? 'פעיל' : 'כבוי'}
               </button>
               <button
                 type="button"
                 onClick={() => handleEdit(pattern)}
                 className="btn-edit"
               >
-                Edit
+                ערוך
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(pattern.name)}
                 className="btn-delete"
               >
-                Delete
+                מחק
               </button>
             </div>
           </div>
