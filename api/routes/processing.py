@@ -11,6 +11,7 @@ from api.config import (
 )
 from api.detectors.regex import RegexDetector
 from api.detectors.user_defined import UserDefinedDetector
+from api.detectors.category import CategoryDetector
 from api.detectors.base import PIIMatch
 from api.obfuscators.text import TextObfuscator
 from api.replacements.mapper import ReplacementMapper
@@ -35,7 +36,9 @@ def get_merged_config(request_config: Optional[ExtractRequestConfig] = None) -> 
     return merge_config(_server_config, request_config_obj)
 
 
-def create_detectors(merged_config: MergedConfig) -> tuple[RegexDetector, Optional[UserDefinedDetector]]:
+def create_detectors(
+    merged_config: MergedConfig
+) -> tuple[RegexDetector, Optional[UserDefinedDetector], Optional[CategoryDetector]]:
     """Create detection components from config."""
     regex_detector = RegexDetector(patterns=merged_config.patterns)
 
@@ -47,7 +50,14 @@ def create_detectors(merged_config: MergedConfig) -> tuple[RegexDetector, Option
         ]
         user_detector = UserDefinedDetector(terms=user_terms)
 
-    return regex_detector, user_detector
+    category_detector = None
+    if merged_config.categories:
+        category_detector = CategoryDetector(
+            categories=merged_config.categories,
+            pii_type="MILITARY_UNIT",
+        )
+
+    return regex_detector, user_detector, category_detector
 
 
 def create_obfuscation_components(merged_config: MergedConfig) -> tuple[ReplacementMapper, TextObfuscator]:
@@ -64,6 +74,7 @@ def detect_pii(
     text: str,
     regex_detector: RegexDetector,
     user_detector: Optional[UserDefinedDetector],
+    category_detector: Optional[CategoryDetector] = None,
 ) -> list[PIIMatch]:
     """Detect PII in text using available detectors."""
     all_matches: list[PIIMatch] = []
@@ -72,6 +83,17 @@ def detect_pii(
     if user_detector:
         user_matches = user_detector.detect(text)
         all_matches.extend(user_matches)
+
+    # Category-based detection (e.g., military units)
+    if category_detector:
+        category_matches = category_detector.detect(text)
+        for new_match in category_matches:
+            overlaps = any(
+                (new_match.start < existing.end and new_match.end > existing.start)
+                for existing in all_matches
+            )
+            if not overlaps:
+                all_matches.append(new_match)
 
     # Pattern-based detection
     pattern_matches = regex_detector.detect(text)

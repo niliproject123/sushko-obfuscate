@@ -46,6 +46,7 @@ class ServerConfig(BaseModel):
         "DEFAULT": "[REDACTED]",
     })
     default_replacements: dict[str, str] = Field(default_factory=dict)  # Global default replacements
+    categories: dict[str, list[str]] = Field(default_factory=dict)  # Category -> words for detection
 
 
 class RequestConfig(BaseModel):
@@ -64,3 +65,4 @@ class MergedConfig(BaseModel):
     placeholders: dict[str, str]
     user_replacements: dict[str, str]  # Merged: default_replacements + request user_replacements
     force_ocr: bool
+    categories: dict[str, list[str]] = Field(default_factory=dict)  # Category -> words

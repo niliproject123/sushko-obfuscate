@@ -2,6 +2,7 @@ import { PatternEditor } from './PatternEditor';
 import { PoolEditor } from './PoolEditor';
 import { SettingsPanel } from './SettingsPanel';
 import { ReplacementEditor } from './ReplacementEditor';
+import { CategoryEditor } from './CategoryEditor';
 import type { ServerConfig, PIIPatternConfig, ReplacementPoolsConfig } from '../../types';
 import './AdminConfig.css';
 
@@ -17,6 +18,11 @@ interface AdminConfigProps {
   onUpdateOcr: (ocr: ServerConfig['ocr']) => Promise<void>;
   onUpdatePlaceholders: (placeholders: Record<string, string>) => Promise<void>;
   onUpdateDefaultReplacements: (replacements: Record<string, string>) => Promise<void>;
+  // Category management
+  onCreateCategory: (name: string, words?: string[]) => Promise<void>;
+  onDeleteCategory: (name: string) => Promise<void>;
+  onAddWordToCategory: (category: string, word: string) => Promise<void>;
+  onRemoveWordFromCategory: (category: string, word: string) => Promise<void>;
 }
 
 export function AdminConfig({
@@ -31,6 +37,10 @@ export function AdminConfig({
   onUpdateOcr,
   onUpdatePlaceholders,
   onUpdateDefaultReplacements,
+  onCreateCategory,
+  onDeleteCategory,
+  onAddWordToCategory,
+  onRemoveWordFromCategory,
 }: AdminConfigProps) {
   if (loading && !config) {
     return (
@@ -68,6 +78,16 @@ export function AdminConfig({
           {error}
         </div>
       )}
+
+      <div className="config-section">
+        <CategoryEditor
+          categories={config.categories || {}}
+          onCreateCategory={onCreateCategory}
+          onDeleteCategory={onDeleteCategory}
+          onAddWord={onAddWordToCategory}
+          onRemoveWord={onRemoveWordFromCategory}
+        />
+      </div>
 
       <div className="config-section">
         <ReplacementEditor

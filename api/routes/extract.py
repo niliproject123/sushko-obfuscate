@@ -58,7 +58,7 @@ async def extract_and_obfuscate(
 
     # Create components
     processor = PDFProcessor(ocr_config=merged_config.ocr)
-    regex_detector, user_detector = create_detectors(merged_config)
+    regex_detector, user_detector, category_detector = create_detectors(merged_config)
     mapper, obfuscator = create_obfuscation_components(merged_config)
 
     # Extract text from PDF
@@ -73,7 +73,7 @@ async def extract_and_obfuscate(
     total_matches = 0
 
     for page in pages:
-        all_matches = detect_pii(page.text, regex_detector, user_detector)
+        all_matches = detect_pii(page.text, regex_detector, user_detector, category_detector)
 
         # Obfuscate text
         processed_text = obfuscator.obfuscate(page.text, all_matches)
@@ -184,10 +184,10 @@ async def extract_plain_text(request: PlainTextRequest):
     """Process plain text and obfuscate PII."""
     merged_config = get_merged_config(request.config)
 
-    regex_detector, user_detector = create_detectors(merged_config)
+    regex_detector, user_detector, category_detector = create_detectors(merged_config)
     mapper, obfuscator = create_obfuscation_components(merged_config)
 
-    all_matches = detect_pii(request.text, regex_detector, user_detector)
+    all_matches = detect_pii(request.text, regex_detector, user_detector, category_detector)
     obfuscated_text = obfuscator.obfuscate(request.text, all_matches)
 
     return PlainTextResponse(

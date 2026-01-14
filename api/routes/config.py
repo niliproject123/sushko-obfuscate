@@ -30,6 +30,7 @@ class ConfigResponse(BaseModel):
     replacement_pools: ReplacementPoolsConfig
     ocr: OCRConfig
     placeholders: dict[str, str]
+    categories: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class UpdateConfigRequest(BaseModel):
@@ -38,6 +39,7 @@ class UpdateConfigRequest(BaseModel):
     replacement_pools: Optional[ReplacementPoolsConfig] = None
     ocr: Optional[OCRConfig] = None
     placeholders: Optional[dict[str, str]] = None
+    categories: Optional[dict[str, list[str]]] = None
 
 
 class PatternUpdateRequest(BaseModel):
@@ -51,6 +53,16 @@ class PoolUpdateRequest(BaseModel):
     values: list[str]
 
 
+class CategoryRequest(BaseModel):
+    """Request model for category operations."""
+    words: list[str] = Field(default_factory=list)
+
+
+class WordRequest(BaseModel):
+    """Request model for word operations."""
+    word: str
+
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -60,7 +72,7 @@ async def get_config():
     """
     Get current server configuration.
 
-    Returns all patterns, replacement pools, OCR settings, and placeholders.
+    Returns all patterns, replacement pools, OCR settings, placeholders, and categories.
     """
     config = load_server_config()
     return ConfigResponse(
@@ -68,6 +80,7 @@ async def get_config():
         replacement_pools=config.replacement_pools,
         ocr=config.ocr,
         placeholders=config.placeholders,
+        categories=config.categories,
     )
 
 
@@ -89,6 +102,8 @@ async def update_config(request: UpdateConfigRequest):
         current.ocr = request.ocr
     if request.placeholders is not None:
         current.placeholders = request.placeholders
+    if request.categories is not None:
+        current.categories = request.categories
 
     # Save and reload
     save_server_config(current)
@@ -99,6 +114,7 @@ async def update_config(request: UpdateConfigRequest):
         replacement_pools=current.replacement_pools,
         ocr=current.ocr,
         placeholders=current.placeholders,
+        categories=current.categories,
     )
 
 
@@ -206,3 +222,130 @@ async def reload_config():
     """
     reload_server_config()
     return {"message": "Configuration reloaded"}
+
+
+# ============================================================================
+# Category Endpoints
+# ============================================================================
+
+@router.get("/config/categories")
+async def get_categories():
+    """Get all word categories for PII detection."""
+    config = load_server_config()
+    return config.categories
+
+
+@router.post("/config/categories/{category_name}")
+async def create_category(category_name: str, request: CategoryRequest):
+    """Create a new category with optional initial words."""
+    config = load_server_config()
+
+    if category_name in config.categories:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Category '{category_name}' already exists"
+        )
+
+    config.categories[category_name] = request.words
+    save_server_config(config)
+    reload_server_config()
+
+    return {"message": f"Category '{category_name}' created", "words": request.words}
+
+
+@router.put("/config/categories/{category_name}")
+async def update_category(category_name: str, request: CategoryRequest):
+    """Update all words in a category."""
+    config = load_server_config()
+
+    if category_name not in config.categories:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Category '{category_name}' not found"
+        )
+
+    config.categories[category_name] = request.words
+    save_server_config(config)
+    reload_server_config()
+
+    return {"message": f"Category '{category_name}' updated", "words": request.words}
+
+
+@router.delete("/config/categories/{category_name}")
+async def delete_category(category_name: str):
+    """Delete a category."""
+    config = load_server_config()
+
+    if category_name not in config.categories:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Category '{category_name}' not found"
+        )
+
+    del config.categories[category_name]
+    save_server_config(config)
+    reload_server_config()
+
+    return {"message": f"Category '{category_name}' deleted"}
+
+
+@router.get("/config/categories/{category_name}/words")
+async def get_category_words(category_name: str):
+    """Get all words in a category."""
+    config = load_server_config()
+
+    if category_name not in config.categories:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Category '{category_name}' not found"
+        )
+
+    return {"category": category_name, "words": config.categories[category_name]}
+
+
+@router.post("/config/categories/{category_name}/words")
+async def add_word_to_category(category_name: str, request: WordRequest):
+    """Add a word to a category."""
+    config = load_server_config()
+
+    if category_name not in config.categories:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Category '{category_name}' not found"
+        )
+
+    if request.word in config.categories[category_name]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Word '{request.word}' already exists in category"
+        )
+
+    config.categories[category_name].append(request.word)
+    save_server_config(config)
+    reload_server_config()
+
+    return {"message": f"Word '{request.word}' added to '{category_name}'"}
+
+
+@router.delete("/config/categories/{category_name}/words/{word}")
+async def remove_word_from_category(category_name: str, word: str):
+    """Remove a word from a category."""
+    config = load_server_config()
+
+    if category_name not in config.categories:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Category '{category_name}' not found"
+        )
+
+    if word not in config.categories[category_name]:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Word '{word}' not found in category"
+        )
+
+    config.categories[category_name].remove(word)
+    save_server_config(config)
+    reload_server_config()
+
+    return {"message": f"Word '{word}' removed from '{category_name}'"}

@@ -158,21 +158,5 @@
     "capture_group": 1,
     "enabled": true,
     "validator": null
-  },
-  {
-    "name": "military_unit",
-    "pii_type": "MILITARY_UNIT",
-    "regex": "(?:יחידה|חטיבה|גדוד|פלוגה|פלוגת|חיל)\\s*[:\\-]?\\s*([\\u0590-\\u05FF'\"\\s]+?)(?=\\s*[,\\.\\n]|$)",
-    "capture_group": 1,
-    "enabled": true,
-    "validator": null
-  },
-  {
-    "name": "military_unit_known",
-    "pii_type": "MILITARY_UNIT",
-    "regex": "\\b(צנחנים|גולני|גבעתי|נח\"ל|שריון|חי\"ר|תותחנים|הנדסה|חיל האוויר|חיל הים|מודיעין|קרקל|לביא|כפיר|עוצבת הבשן|עוצבת הגולן|עוצבת עזה|עוצבת יהודה ושומרון|סיירת מטכ\"ל|שייטת 13|סיירת גולני|סיירת צנחנים|סיירת גבעתי|מגלן|אגוז|דובדבן|רימון|יהלו\"ם|עוקץ|669|Unit 8200|יחידה 8200|8200)\\b",
-    "capture_group": 1,
-    "enabled": true,
-    "validator": null
   }
 ]

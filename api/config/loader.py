@@ -16,6 +16,7 @@ SETTINGS_PATH = CONFIG_DIR / "settings.json"
 PATTERNS_PATH = CONFIG_DIR / "patterns.json"
 POOLS_PATH = CONFIG_DIR / "pools.json"
 REPLACEMENTS_PATH = CONFIG_DIR / "replacements.json"
+CATEGORIES_PATH = CONFIG_DIR / "categories.json"
 
 
 def _load_json(path: Path) -> dict | list:
@@ -40,6 +41,9 @@ def load_server_config() -> ServerConfig:
     # Load replacements from separate file
     replacements = _load_json(REPLACEMENTS_PATH) if REPLACEMENTS_PATH.exists() else {}
 
+    # Load categories from separate file
+    categories = _load_json(CATEGORIES_PATH) if CATEGORIES_PATH.exists() else {}
+
     # Merge into single config
     return ServerConfig(
         patterns=patterns,
@@ -47,6 +51,7 @@ def load_server_config() -> ServerConfig:
         default_replacements=replacements,
         ocr=settings.get("ocr", {}),
         placeholders=settings.get("placeholders", {}),
+        categories=categories,
     )
 
 
@@ -64,6 +69,10 @@ def save_server_config(config: ServerConfig) -> None:
     # Save replacements
     with open(REPLACEMENTS_PATH, "w", encoding="utf-8") as f:
         json.dump(config.default_replacements, f, ensure_ascii=False, indent=2)
+
+    # Save categories
+    with open(CATEGORIES_PATH, "w", encoding="utf-8") as f:
+        json.dump(config.categories, f, ensure_ascii=False, indent=2)
 
     # Save main settings (ocr + placeholders)
     settings = {
@@ -116,6 +125,7 @@ def merge_config(
         placeholders=server_config.placeholders,
         user_replacements=merged_replacements,
         force_ocr=force_ocr,
+        categories=server_config.categories,
     )
 
 

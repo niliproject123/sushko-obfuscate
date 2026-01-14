@@ -54,3 +54,55 @@ export async function updatePool(
     { pool_name: poolName, values }
   );
 }
+
+// Categories
+export async function getCategories(): Promise<Record<string, string[]>> {
+  return apiGet<Record<string, string[]>>('/config/categories');
+}
+
+export async function createCategory(
+  categoryName: string,
+  words: string[] = []
+): Promise<{ message: string; words: string[] }> {
+  return apiPost<{ message: string; words: string[] }>(
+    `/config/categories/${encodeURIComponent(categoryName)}`,
+    { words }
+  );
+}
+
+export async function updateCategory(
+  categoryName: string,
+  words: string[]
+): Promise<{ message: string; words: string[] }> {
+  return apiPut<{ message: string; words: string[] }>(
+    `/config/categories/${encodeURIComponent(categoryName)}`,
+    { words }
+  );
+}
+
+export async function deleteCategory(
+  categoryName: string
+): Promise<{ message: string }> {
+  return apiDelete<{ message: string }>(
+    `/config/categories/${encodeURIComponent(categoryName)}`
+  );
+}
+
+export async function addWordToCategory(
+  categoryName: string,
+  word: string
+): Promise<{ message: string }> {
+  return apiPost<{ message: string }>(
+    `/config/categories/${encodeURIComponent(categoryName)}/words`,
+    { word }
+  );
+}
+
+export async function removeWordFromCategory(
+  categoryName: string,
+  word: string
+): Promise<{ message: string }> {
+  return apiDelete<{ message: string }>(
+    `/config/categories/${encodeURIComponent(categoryName)}/words/${encodeURIComponent(word)}`
+  );
+}

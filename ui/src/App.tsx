@@ -46,6 +46,10 @@ function App() {
     updateOcr,
     updatePlaceholders,
     updateDefaultReplacements,
+    createCategory,
+    deleteCategory,
+    addWordToCategory,
+    removeWordFromCategory,
   } = useAdminConfig();
 
   // File processor
@@ -132,6 +136,10 @@ function App() {
               onUpdateOcr={updateOcr}
               onUpdatePlaceholders={updatePlaceholders}
               onUpdateDefaultReplacements={updateDefaultReplacements}
+              onCreateCategory={createCategory}
+              onDeleteCategory={deleteCategory}
+              onAddWordToCategory={addWordToCategory}
+              onRemoveWordFromCategory={removeWordFromCategory}
             />
           )}
         </section>
