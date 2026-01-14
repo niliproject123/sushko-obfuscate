@@ -3,20 +3,24 @@ import './CategoryEditor.css';
 
 interface CategoryEditorProps {
   categories: Record<string, string[]>;
+  disabledCategories?: string[];
   onCreateCategory: (name: string, words?: string[]) => Promise<void>;
   onDeleteCategory: (name: string) => Promise<void>;
   onAddWord: (category: string, word: string) => Promise<void>;
   onRemoveWord: (category: string, word: string) => Promise<void>;
+  onToggleCategory?: (name: string) => Promise<void>;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
 }
 
 export function CategoryEditor({
   categories,
+  disabledCategories = [],
   onCreateCategory,
   onDeleteCategory,
   onAddWord,
   onRemoveWord,
+  onToggleCategory,
   collapsible = true,
   defaultCollapsed = true,
 }: CategoryEditorProps) {
@@ -95,12 +99,25 @@ export function CategoryEditor({
         ) : (
           categoryEntries.map(([name, words]) => {
             const isExpanded = expandedCategories.has(name);
+            const isEnabled = !disabledCategories.includes(name);
             return (
-              <div key={name} className="category-item">
+              <div key={name} className={`category-item ${!isEnabled ? 'disabled' : ''}`}>
                 <div className="category-header" onClick={() => toggleCategory(name)}>
                   <span className="expand-icon">{isExpanded ? '▼' : '◀'}</span>
                   <span className="category-name">{name}</span>
                   <span className="word-count">{words.length} מילים</span>
+                  {onToggleCategory && (
+                    <button
+                      type="button"
+                      className={`btn-toggle ${isEnabled ? 'on' : 'off'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleCategory(name);
+                      }}
+                    >
+                      {isEnabled ? 'פעיל' : 'כבוי'}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn-delete-category"

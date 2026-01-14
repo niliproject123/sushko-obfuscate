@@ -106,3 +106,12 @@ export async function removeWordFromCategory(
     `/config/categories/${encodeURIComponent(categoryName)}/words/${encodeURIComponent(word)}`
   );
 }
+
+export async function toggleCategory(
+  categoryName: string
+): Promise<{ category: string; enabled: boolean }> {
+  return apiPut<{ category: string; enabled: boolean }>(
+    `/config/categories/${encodeURIComponent(categoryName)}/toggle`,
+    {}
+  );
+}

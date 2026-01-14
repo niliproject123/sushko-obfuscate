@@ -21,6 +21,7 @@ interface UseAdminConfigReturn {
   deleteCategory: (name: string) => Promise<void>;
   addWordToCategory: (category: string, word: string) => Promise<void>;
   removeWordFromCategory: (category: string, word: string) => Promise<void>;
+  toggleCategory: (name: string) => Promise<void>;
 }
 
 export function useAdminConfig(): UseAdminConfigReturn {
@@ -189,6 +190,17 @@ export function useAdminConfig(): UseAdminConfigReturn {
     }
   }, [refresh]);
 
+  const toggleCategory = useCallback(async (name: string) => {
+    setError(null);
+    try {
+      await configApi.toggleCategory(name);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to toggle category');
+      throw err;
+    }
+  }, [refresh]);
+
   return {
     config,
     loading,
@@ -207,5 +219,6 @@ export function useAdminConfig(): UseAdminConfigReturn {
     deleteCategory,
     addWordToCategory,
     removeWordFromCategory,
+    toggleCategory,
   };
 }
