@@ -7,6 +7,8 @@ interface CategoryEditorProps {
   onDeleteCategory: (name: string) => Promise<void>;
   onAddWord: (category: string, word: string) => Promise<void>;
   onRemoveWord: (category: string, word: string) => Promise<void>;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 export function CategoryEditor({
@@ -15,10 +17,13 @@ export function CategoryEditor({
   onDeleteCategory,
   onAddWord,
   onRemoveWord,
+  collapsible = true,
+  defaultCollapsed = true,
 }: CategoryEditorProps) {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newWords, setNewWords] = useState<Record<string, string>>({});
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -60,16 +65,10 @@ export function CategoryEditor({
   };
 
   const categoryEntries = Object.entries(categories);
+  const totalWords = categoryEntries.reduce((sum, [, words]) => sum + words.length, 0);
 
-  return (
-    <div className="category-editor">
-      <div className="section-header">
-        <h3>קטגוריות לזיהוי (יחידות צבאיות)</h3>
-        <p className="section-description">
-          הגדר קטגוריות ומילים לזיהוי אוטומטי. כל מילה בקטגוריה תזוהה ותוחלף.
-        </p>
-      </div>
-
+  const content = (
+    <>
       {/* Add new category */}
       <div className="add-category-form">
         <input
@@ -164,6 +163,42 @@ export function CategoryEditor({
           })
         )}
       </div>
+    </>
+  );
+
+  if (collapsible) {
+    return (
+      <div className="category-editor collapsible">
+        <button
+          type="button"
+          className="collapsible-header"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <span className="collapse-icon">{isCollapsed ? '▶' : '▼'}</span>
+          <h3>קטגוריות לזיהוי (יחידות צבאיות)</h3>
+          <span className="count-badge">
+            {categoryEntries.length} קטגוריות, {totalWords} מילים
+          </span>
+        </button>
+        {!isCollapsed && (
+          <p className="section-description">
+            הגדר קטגוריות ומילים לזיהוי אוטומטי. כל מילה בקטגוריה תזוהה ותוחלף.
+          </p>
+        )}
+        {!isCollapsed && content}
+      </div>
+    );
+  }
+
+  return (
+    <div className="category-editor">
+      <div className="section-header">
+        <h3>קטגוריות לזיהוי (יחידות צבאיות)</h3>
+        <p className="section-description">
+          הגדר קטגוריות ומילים לזיהוי אוטומטי. כל מילה בקטגוריה תזוהה ותוחלף.
+        </p>
+      </div>
+      {content}
     </div>
   );
 }

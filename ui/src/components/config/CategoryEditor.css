@@ -2,6 +2,46 @@
   margin-top: 1.5rem;
 }
 
+.category-editor.collapsible {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.category-editor .collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  text-align: right;
+}
+
+.category-editor .collapsible-header h3 {
+  margin: 0;
+  flex: 1;
+  text-align: right;
+  font-size: 1.1rem;
+}
+
+.category-editor .collapse-icon {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.category-editor .count-badge {
+  background: #007bff;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .category-editor .section-header h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.1rem;
@@ -15,12 +55,14 @@
 
 .add-category-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
 .add-category-form input {
-  flex: 1;
+  flex: 1 1 200px;
+  min-width: 0;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -28,6 +70,7 @@
 }
 
 .add-category-form .btn-add {
+  flex-shrink: 0;
   padding: 0.75rem 1rem;
   background: #28a745;
   color: white;
@@ -35,6 +78,12 @@
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+@media (max-width: 400px) {
+  .add-category-form .btn-add {
+    width: 100%;
+  }
 }
 
 .add-category-form .btn-add:hover:not(:disabled) {
