@@ -20,6 +20,8 @@ class ReplacementPoolsConfig(BaseModel):
     name_english_last: list[str] = Field(default_factory=list)
     city: list[str] = Field(default_factory=list)
     street: list[str] = Field(default_factory=list)
+    age: list[str] = Field(default_factory=list)
+    military_unit: list[str] = Field(default_factory=list)
 
 
 class OCRConfig(BaseModel):
