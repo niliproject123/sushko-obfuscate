@@ -15,6 +15,12 @@ interface UseAdminConfigReturn {
   updatePlaceholders: (placeholders: Record<string, string>) => Promise<void>;
   updateOcr: (ocr: ServerConfig['ocr']) => Promise<void>;
   updateDefaultReplacements: (replacements: Record<string, string>) => Promise<void>;
+  // Category management
+  createCategory: (name: string, words?: string[]) => Promise<void>;
+  updateCategory: (name: string, words: string[]) => Promise<void>;
+  deleteCategory: (name: string) => Promise<void>;
+  addWordToCategory: (category: string, word: string) => Promise<void>;
+  removeWordFromCategory: (category: string, word: string) => Promise<void>;
 }
 
 export function useAdminConfig(): UseAdminConfigReturn {
@@ -127,6 +133,62 @@ export function useAdminConfig(): UseAdminConfigReturn {
     }
   }, []);
 
+  // Category management
+  const createCategory = useCallback(async (name: string, words: string[] = []) => {
+    setError(null);
+    try {
+      await configApi.createCategory(name, words);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create category');
+      throw err;
+    }
+  }, [refresh]);
+
+  const updateCategory = useCallback(async (name: string, words: string[]) => {
+    setError(null);
+    try {
+      await configApi.updateCategory(name, words);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update category');
+      throw err;
+    }
+  }, [refresh]);
+
+  const deleteCategory = useCallback(async (name: string) => {
+    setError(null);
+    try {
+      await configApi.deleteCategory(name);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete category');
+      throw err;
+    }
+  }, [refresh]);
+
+  const addWordToCategory = useCallback(async (category: string, word: string) => {
+    setError(null);
+    try {
+      await configApi.addWordToCategory(category, word);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add word');
+      throw err;
+    }
+  }, [refresh]);
+
+  const removeWordFromCategory = useCallback(async (category: string, word: string) => {
+    setError(null);
+    try {
+      await configApi.removeWordFromCategory(category, word);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove word');
+      throw err;
+    }
+  }, [refresh]);
+
   return {
     config,
     loading,
@@ -140,5 +202,10 @@ export function useAdminConfig(): UseAdminConfigReturn {
     updatePlaceholders,
     updateOcr,
     updateDefaultReplacements,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    addWordToCategory,
+    removeWordFromCategory,
   };
 }

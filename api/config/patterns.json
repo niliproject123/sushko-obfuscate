@@ -1,0 +1,162 @@
+[
+  {
+    "name": "israeli_id",
+    "pii_type": "ID",
+    "regex": "\\b\\d{9}\\b",
+    "capture_group": 0,
+    "enabled": true,
+    "validator": "israeli_id_checksum"
+  },
+  {
+    "name": "israeli_id_short",
+    "pii_type": "ID",
+    "regex": "\\b\\d{7,8}\\b",
+    "capture_group": 0,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "phone_mobile",
+    "pii_type": "PHONE",
+    "regex": "0[5][0-9][-־]?\\d{7}",
+    "capture_group": 0,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "phone_landline",
+    "pii_type": "PHONE",
+    "regex": "0[2-9][-־]?\\d{7}",
+    "capture_group": 0,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "email",
+    "pii_type": "EMAIL",
+    "regex": "[\\w\\.-]+@[\\w\\.-]+\\.\\w+",
+    "capture_group": 0,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "hebrew_first_name",
+    "pii_type": "NAME",
+    "regex": "שם\\s+פרטי\\s*[:\\-]?\\s*([\\u0590-\\u05FF']+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "hebrew_last_name",
+    "pii_type": "NAME",
+    "regex": "שם\\s+משפחה\\s*[:\\-]?\\s*([\\u0590-\\u05FF']+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "hebrew_full_name",
+    "pii_type": "NAME",
+    "regex": "שם\\s+מלא\\s*[:\\-]?\\s*([\\u0590-\\u05FF'\\s]+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "hebrew_father_name",
+    "pii_type": "NAME",
+    "regex": "שם\\s+האב\\s*[:\\-]?\\s*([\\u0590-\\u05FF']+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "english_first_name",
+    "pii_type": "NAME",
+    "regex": "(?:First\\s+)?Name\\s*[:\\-]?\\s*([A-Za-z]+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "english_last_name",
+    "pii_type": "NAME",
+    "regex": "Last\\s+Name\\s*[:\\-]?\\s*([A-Za-z]+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "city",
+    "pii_type": "ADDRESS",
+    "regex": "ישוב\\s*[:\\-]?\\s*([\\u0590-\\u05FF\\s]+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "street",
+    "pii_type": "ADDRESS",
+    "regex": "רחוב\\s*[:\\-]?\\s*([\\u0590-\\u05FF\\s]+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "medical_license",
+    "pii_type": "LICENSE",
+    "regex": "מ\\.?ר\\.?\\s*(\\d+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "case_number",
+    "pii_type": "CASE_NUMBER",
+    "regex": "מקרה\\s+מספר\\s*[:\\-]?\\s*(\\d+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "bank_account",
+    "pii_type": "BANK_ACCOUNT",
+    "regex": "מספר\\s+חשבון\\s+בנק\\s*[:\\-]?\\s*(\\d+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "bank_branch",
+    "pii_type": "BANK_BRANCH",
+    "regex": "קוד\\s+סניף\\s*[:\\-]?\\s*(\\d+)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "doctor_name",
+    "pii_type": "NAME",
+    "regex": "ד\"?ר\\.?\\s+([\\u0590-\\u05FF']+(?:\\s+[\\u0590-\\u05FF']+)?)",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "age_years",
+    "pii_type": "AGE",
+    "regex": "(?:בן|בת|גיל)\\s*(\\d{1,3})(?:\\s*(?:שנים|שנה))?",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  },
+  {
+    "name": "age_standalone",
+    "pii_type": "AGE",
+    "regex": "גיל\\s*[:\\-]?\\s*(\\d{1,3})",
+    "capture_group": 1,
+    "enabled": true,
+    "validator": null
+  }
+]

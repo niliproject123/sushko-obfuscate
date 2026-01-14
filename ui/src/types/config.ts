@@ -31,6 +31,7 @@ export interface ServerConfig {
   ocr: OCRConfig;
   placeholders: Record<string, string>;
   default_replacements: Record<string, string>;
+  categories: Record<string, string[]>;
 }
 
 export interface RequestConfig {

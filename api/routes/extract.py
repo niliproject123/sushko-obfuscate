@@ -2,118 +2,42 @@
 PDF extraction and anonymization endpoint.
 """
 import json
-from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
 
-from api.config import (
-    load_server_config,
-    merge_config,
-    RequestConfig,
-    MergedConfig,
-)
 from api.processors.pdf import PDFProcessor
 from api.processors.base import ProcessedPage
-from api.detectors.regex import RegexDetector
-from api.detectors.user_defined import UserDefinedDetector
-from api.detectors.base import PIIMatch
-from api.obfuscators.text import TextObfuscator
-from api.replacements.mapper import ReplacementMapper
 from api.storage.temp import storage
+
+from api.routes.models import (
+    ExtractRequestConfig,
+    ExtractResponse,
+    PlainTextRequest,
+    PlainTextResponse,
+    PIIMatchResponse,
+    PageSummary,
+)
+from api.routes.processing import (
+    get_merged_config,
+    create_detectors,
+    create_obfuscation_components,
+    detect_pii,
+)
 
 
 router = APIRouter()
 
-
-# ============================================================================
-# Request/Response Models
-# ============================================================================
-
-class UserReplacement(BaseModel):
-    """User-defined replacement mapping."""
-    original: str
-    replacement: str
-
-
-class ExtractRequestConfig(BaseModel):
-    """Per-request configuration from client."""
-    user_replacements: dict[str, str] = Field(default_factory=dict)
-    disabled_detectors: list[str] = Field(default_factory=list)
-    force_ocr: bool = False
-
-
-class PIIMatchResponse(BaseModel):
-    """Response model for a PII match."""
-    text: str
-    type: str
-    start: int
-    end: int
-    pattern_name: str = ""
-    replacement: str = ""
-
-
-class PageSummary(BaseModel):
-    """Summary of processing for a single page."""
-    page_number: int
-    matches_found: int
-    matches: list[PIIMatchResponse]
-
-
-class ExtractResponse(BaseModel):
-    """Response model for extraction."""
-    file_id: str
-    page_count: int
-    total_matches: int
-    pages: list[PageSummary]
-    mappings_used: dict[str, str]  # original -> replacement
-    warnings: list[str] = Field(default_factory=list)
-
-
-# ============================================================================
-# Configuration
-# ============================================================================
-
-# Load server config at startup
-_server_config = load_server_config()
-
 # Max file size (20MB)
 MAX_FILE_SIZE = 20 * 1024 * 1024
 
-
-def get_merged_config(request_config: Optional[ExtractRequestConfig] = None) -> MergedConfig:
-    """Get merged configuration (server + request)."""
-    if request_config is None:
-        request_config_obj = RequestConfig()
-    else:
-        request_config_obj = RequestConfig(
-            user_replacements=request_config.user_replacements,
-            disabled_detectors=request_config.disabled_detectors,
-            force_ocr=request_config.force_ocr,
-        )
-    return merge_config(_server_config, request_config_obj)
-
-
-# ============================================================================
-# Endpoints
-# ============================================================================
 
 @router.post("/extract", response_model=ExtractResponse)
 async def extract_and_obfuscate(
     file: UploadFile = File(...),
     config: str = Form(default="{}"),
 ):
-    """
-    Extract text from PDF and obfuscate PII.
-
-    Args:
-        file: The PDF file to process
-        config: JSON string of ExtractRequestConfig
-
-    Returns:
-        Summary of processing with file ID for download and mappings used
-    """
+    """Extract text from PDF and obfuscate PII."""
     # Parse config
     try:
         config_data = json.loads(config)
@@ -132,60 +56,16 @@ async def extract_and_obfuscate(
     # Get merged configuration
     merged_config = get_merged_config(request_config)
 
-    # Create processor with OCR config
+    # Create components
     processor = PDFProcessor(ocr_config=merged_config.ocr)
+    regex_detector, user_detector, category_detector = create_detectors(merged_config)
+    mapper, obfuscator = create_obfuscation_components(merged_config)
 
     # Extract text from PDF
     pages = processor.extract_text(content, force_ocr=merged_config.force_ocr)
 
-    # Create detector from patterns
-    regex_detector = RegexDetector(patterns=merged_config.patterns)
-
-    # Create user-defined detector if there are user replacements
-    user_detector = None
-    if merged_config.user_replacements:
-        user_terms = [
-            {"text": original, "type": "USER_DEFINED"}
-            for original in merged_config.user_replacements.keys()
-        ]
-        user_detector = UserDefinedDetector(terms=user_terms)
-
-    # Create replacement mapper
-    mapper = ReplacementMapper(
-        user_mappings=merged_config.user_replacements,
-        pools=merged_config.replacement_pools,
-    )
-
-    # Create obfuscator with mapper
-    obfuscator = TextObfuscator(mapper=mapper)
-
-    # Collect warnings from pages
-    warnings = []
-    is_image_based = False
-
-    for page in pages:
-        if page.metadata:
-            # Check if any page is image-based
-            if page.metadata.get("is_image_based"):
-                is_image_based = True
-            # Collect page-specific warnings
-            if "warning" in page.metadata:
-                page_warning = page.metadata["warning"]
-                if page_warning not in warnings:
-                    warnings.append(page_warning)
-
-    # Add general warning if PDF is image-based
-    if is_image_based:
-        ocr_method = any(
-            page.metadata and page.metadata.get("extraction_method") == "ocr"
-            for page in pages
-        )
-        if ocr_method:
-            warnings.insert(0, "This PDF is image-based and was processed using OCR. Text extraction accuracy may vary.")
-        else:
-            # This shouldn't happen if OCR is properly configured, but just in case
-            if "PDF appears to be image-based but OCR is disabled" not in warnings:
-                warnings.insert(0, "This PDF appears to be image-based. OCR was used for text extraction.")
+    # Collect warnings
+    warnings = _collect_warnings(pages)
 
     # Process each page
     processed_pages = []
@@ -193,24 +73,7 @@ async def extract_and_obfuscate(
     total_matches = 0
 
     for page in pages:
-        all_matches: list[PIIMatch] = []
-
-        # User-defined matches first (take priority)
-        if user_detector:
-            user_matches = user_detector.detect(page.text)
-            all_matches.extend(user_matches)
-
-        # Pattern-based detection
-        pattern_matches = regex_detector.detect(page.text)
-
-        # Filter out matches that overlap with existing matches
-        for new_match in pattern_matches:
-            overlaps = any(
-                (new_match.start < existing.end and new_match.end > existing.start)
-                for existing in all_matches
-            )
-            if not overlaps:
-                all_matches.append(new_match)
+        all_matches = detect_pii(page.text, regex_detector, user_detector, category_detector)
 
         # Obfuscate text
         processed_text = obfuscator.obfuscate(page.text, all_matches)
@@ -223,22 +86,22 @@ async def extract_and_obfuscate(
             metadata=page.metadata,
         ))
 
-        # Build page summary with replacement info
-        match_responses = []
-        for match in all_matches:
-            replacement = mapper.get_replacement(
-                original=match.text,
-                pii_type=match.type,
-                pattern_name=match.pattern_name,
-            )
-            match_responses.append(PIIMatchResponse(
+        # Build page summary
+        match_responses = [
+            PIIMatchResponse(
                 text=match.text,
                 type=match.type,
                 start=match.start,
                 end=match.end,
                 pattern_name=match.pattern_name,
-                replacement=replacement,
-            ))
+                replacement=mapper.get_replacement(
+                    original=match.text,
+                    pii_type=match.type,
+                    pattern_name=match.pattern_name,
+                ),
+            )
+            for match in all_matches
+        ]
 
         page_summaries.append(PageSummary(
             page_number=page.page_number,
@@ -248,7 +111,8 @@ async def extract_and_obfuscate(
 
         total_matches += len(all_matches)
 
-    # Reassemble PDF and save
+    # Collect obfuscated text and reassemble PDF
+    full_obfuscated_text = "\n\n".join(page.processed_text for page in processed_pages)
     output_content = processor.reassemble(processed_pages)
     file_id = storage.save(output_content)
 
@@ -259,7 +123,35 @@ async def extract_and_obfuscate(
         pages=page_summaries,
         mappings_used=mapper.get_all_mappings(),
         warnings=warnings,
+        obfuscated_text=full_obfuscated_text,
     )
+
+
+def _collect_warnings(pages) -> list[str]:
+    """Collect warnings from processed pages."""
+    warnings = []
+    is_image_based = False
+
+    for page in pages:
+        if page.metadata:
+            if page.metadata.get("is_image_based"):
+                is_image_based = True
+            if "warning" in page.metadata:
+                page_warning = page.metadata["warning"]
+                if page_warning not in warnings:
+                    warnings.append(page_warning)
+
+    if is_image_based:
+        ocr_method = any(
+            page.metadata and page.metadata.get("extraction_method") == "ocr"
+            for page in pages
+        )
+        if ocr_method:
+            warnings.insert(0, "This PDF is image-based and was processed using OCR. Text extraction accuracy may vary.")
+        elif "PDF appears to be image-based but OCR is disabled" not in warnings:
+            warnings.insert(0, "This PDF appears to be image-based. OCR was used for text extraction.")
+
+    return warnings
 
 
 @router.get("/download/{file_id}")
@@ -283,10 +175,24 @@ async def extract_text_only(
     file: UploadFile = File(...),
     config: str = Form(default="{}"),
 ):
-    """
-    Extract and anonymize text, returning text instead of PDF.
-    Useful for previewing results before generating final PDF.
-    """
-    # This is identical to extract_and_obfuscate but could return
-    # processed text directly instead of generating PDF
+    """Extract and anonymize text, returning text instead of PDF."""
     return await extract_and_obfuscate(file=file, config=config)
+
+
+@router.post("/extract/plain", response_model=PlainTextResponse)
+async def extract_plain_text(request: PlainTextRequest):
+    """Process plain text and obfuscate PII."""
+    merged_config = get_merged_config(request.config)
+
+    regex_detector, user_detector, category_detector = create_detectors(merged_config)
+    mapper, obfuscator = create_obfuscation_components(merged_config)
+
+    all_matches = detect_pii(request.text, regex_detector, user_detector, category_detector)
+    obfuscated_text = obfuscator.obfuscate(request.text, all_matches)
+
+    return PlainTextResponse(
+        total_matches=len(all_matches),
+        mappings_used=mapper.get_all_mappings(),
+        obfuscated_text=obfuscated_text,
+        warnings=[],
+    )
