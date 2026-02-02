@@ -13,7 +13,7 @@ import './App.css';
 
 const CONFIG_TABS: Tab[] = [
   { id: 'user', label: 'הגדרות משתמש' },
-  { id: 'admin', label: 'הגדרות מנהל' },
+  { id: 'admin', label: 'הגדרות שרת' },
 ];
 
 const INPUT_TABS: Tab[] = [
@@ -142,12 +142,7 @@ function App() {
               <Tabs
                 tabs={CONFIG_TABS}
                 activeTab={activeTab}
-                onTabChange={(id) => {
-                  if (id === 'admin' && !adminUnlocked) {
-                    return; // Don't switch until unlocked
-                  }
-                  setActiveTab(id);
-                }}
+                onTabChange={(id) => setActiveTab(id)}
               />
 
               {activeTab === 'user' && (
