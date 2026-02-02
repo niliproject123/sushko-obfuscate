@@ -99,7 +99,7 @@ function App() {
             <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
           </div>
           <a
-            href="https://github.com/niliproject123/sushko-obfuscate/releases/latest/download/sushko.exe"
+            href="https://github.com/niliproject123/sushko-obfuscate/releases/latest/download/sushko-windows.zip"
             className="btn btn-download"
             download
           >
