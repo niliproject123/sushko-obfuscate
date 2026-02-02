@@ -93,8 +93,19 @@ function App() {
   return (
     <div className="app" dir="rtl">
       <header className="header">
-        <h1>סושקו - מחלץ טקסט מ-PDF</h1>
-        <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
+        <div className="header-row">
+          <div>
+            <h1>סושקו - מחלץ טקסט מ-PDF</h1>
+            <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
+          </div>
+          <a
+            href="https://github.com/niliproject123/sushko-obfuscate/releases/latest/download/sushko.exe"
+            className="btn btn-download"
+            download
+          >
+            ⬇ הורד גרסת מחשב
+          </a>
+        </div>
       </header>
 
       <main className="main">
