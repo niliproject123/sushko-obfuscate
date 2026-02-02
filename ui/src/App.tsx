@@ -98,13 +98,15 @@ function App() {
             <h1>סושקו - מחלץ טקסט מ-PDF</h1>
             <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
           </div>
-          <a
-            href="https://github.com/niliproject123/sushko-obfuscate/releases/latest/download/sushko-windows.zip"
-            className="btn btn-download"
-            download
-          >
-            ⬇ הורד גרסת מחשב
-          </a>
+          {!window.location.hostname.match(/^(127\.|localhost)/) && (
+            <a
+              href="https://github.com/niliproject123/sushko-obfuscate/releases/latest/download/sushko-windows.zip"
+              className="btn btn-download"
+              download
+            >
+              ⬇ הורד גרסת מחשב
+            </a>
+          )}
         </div>
       </header>
 
