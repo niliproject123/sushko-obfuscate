@@ -2,7 +2,7 @@ name: Build Desktop App
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/add-download-exe-button-BYmom']
   workflow_dispatch:
 
 jobs:
