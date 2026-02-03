@@ -9,6 +9,7 @@ import { useUserConfig } from './hooks/useUserConfig';
 import { useAdminConfig } from './hooks/useAdminConfig';
 import { useFileProcessor } from './hooks/useFileProcessor';
 import { useTextProcessor } from './hooks/useTextProcessor';
+import { isLocal } from './utils/environment';
 import './App.css';
 
 const CONFIG_TABS: Tab[] = [
@@ -27,7 +28,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('user');
   const [inputMode, setInputMode] = useState<'pdf' | 'text'>('pdf');
   const [showConfig, setShowConfig] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(isLocal());
   const [passwordInput, setPasswordInput] = useState('');
 
   // User config (localStorage)
@@ -98,7 +99,7 @@ function App() {
             <h1>סושקו - מחלץ טקסט מ-PDF</h1>
             <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
           </div>
-          {!window.location.hostname.match(/^(127\.|localhost)/) && (
+          {!isLocal() && (
             <a
               href="https://github.com/niliproject123/sushko-obfuscate/releases/latest/download/sushko-windows.zip"
               className="btn btn-download"
