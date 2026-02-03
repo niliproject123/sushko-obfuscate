@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ServerConfig, PIIPatternConfig, ReplacementPoolsConfig } from '../types';
 import * as configApi from '../services/configApi';
+import { createAsyncAction } from './useAsyncAction';
 
 interface UseAdminConfigReturn {
   config: ServerConfig | null;
@@ -46,179 +47,94 @@ export function useAdminConfig(): UseAdminConfigReturn {
     refresh();
   }, [refresh]);
 
-  const updatePatterns = useCallback(async (patterns: PIIPatternConfig[]) => {
-    setError(null);
-    try {
-      const updated = await configApi.updateConfig({ patterns });
-      setConfig(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update patterns');
-      throw err;
-    }
-  }, []);
+  // Helper to create actions that update config directly
+  const withConfigUpdate = useCallback(
+    <T>(apiCall: (arg: T) => Promise<ServerConfig>, errorMsg: string) =>
+      createAsyncAction(setError, async (arg: T) => {
+        const updated = await apiCall(arg);
+        setConfig(updated);
+      }, errorMsg),
+    []
+  );
 
-  const addPattern = useCallback(async (pattern: PIIPatternConfig) => {
-    setError(null);
-    try {
-      await configApi.addPattern(pattern);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add pattern');
-      throw err;
-    }
-  }, [refresh]);
+  // Helper to create actions that refresh after completion
+  const withRefresh = useCallback(
+    <TArgs extends unknown[]>(
+      apiCall: (...args: TArgs) => Promise<unknown>,
+      errorMsg: string
+    ) =>
+      createAsyncAction(setError, async (...args: TArgs) => {
+        await apiCall(...args);
+        await refresh();
+      }, errorMsg),
+    [refresh]
+  );
 
-  const updatePattern = useCallback(async (name: string, pattern: PIIPatternConfig) => {
-    setError(null);
-    try {
-      await configApi.updatePattern(name, pattern);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update pattern');
-      throw err;
-    }
-  }, [refresh]);
-
-  const deletePattern = useCallback(async (name: string) => {
-    setError(null);
-    try {
-      await configApi.deletePattern(name);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete pattern');
-      throw err;
-    }
-  }, [refresh]);
-
-  const updatePool = useCallback(async (poolName: keyof ReplacementPoolsConfig, values: string[]) => {
-    setError(null);
-    try {
-      await configApi.updatePool(poolName, values);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update pool');
-      throw err;
-    }
-  }, [refresh]);
-
-  const updatePlaceholders = useCallback(async (placeholders: Record<string, string>) => {
-    setError(null);
-    try {
-      const updated = await configApi.updateConfig({ placeholders });
-      setConfig(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update placeholders');
-      throw err;
-    }
-  }, []);
-
-  const updateOcr = useCallback(async (ocr: ServerConfig['ocr']) => {
-    setError(null);
-    try {
-      const updated = await configApi.updateConfig({ ocr });
-      setConfig(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update OCR settings');
-      throw err;
-    }
-  }, []);
-
-  const updateDefaultReplacements = useCallback(async (replacements: Record<string, string>) => {
-    setError(null);
-    try {
-      const updated = await configApi.updateConfig({ default_replacements: replacements });
-      setConfig(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update default replacements');
-      throw err;
-    }
-  }, []);
-
-  // Category management
-  const createCategory = useCallback(async (name: string, words: string[] = []) => {
-    setError(null);
-    try {
-      await configApi.createCategory(name, words);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create category');
-      throw err;
-    }
-  }, [refresh]);
-
-  const updateCategory = useCallback(async (name: string, words: string[]) => {
-    setError(null);
-    try {
-      await configApi.updateCategory(name, words);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update category');
-      throw err;
-    }
-  }, [refresh]);
-
-  const deleteCategory = useCallback(async (name: string) => {
-    setError(null);
-    try {
-      await configApi.deleteCategory(name);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete category');
-      throw err;
-    }
-  }, [refresh]);
-
-  const addWordToCategory = useCallback(async (category: string, word: string) => {
-    setError(null);
-    try {
-      await configApi.addWordToCategory(category, word);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add word');
-      throw err;
-    }
-  }, [refresh]);
-
-  const removeWordFromCategory = useCallback(async (category: string, word: string) => {
-    setError(null);
-    try {
-      await configApi.removeWordFromCategory(category, word);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove word');
-      throw err;
-    }
-  }, [refresh]);
-
-  const toggleCategory = useCallback(async (name: string) => {
-    setError(null);
-    try {
-      await configApi.toggleCategory(name);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to toggle category');
-      throw err;
-    }
-  }, [refresh]);
+  // Memoize all actions to prevent unnecessary re-renders
+  const actions = useMemo(() => ({
+    updatePatterns: withConfigUpdate(
+      (patterns: PIIPatternConfig[]) => configApi.updateConfig({ patterns }),
+      'Failed to update patterns'
+    ),
+    addPattern: withRefresh(
+      (pattern: PIIPatternConfig) => configApi.addPattern(pattern),
+      'Failed to add pattern'
+    ),
+    updatePattern: withRefresh(
+      (name: string, pattern: PIIPatternConfig) => configApi.updatePattern(name, pattern),
+      'Failed to update pattern'
+    ),
+    deletePattern: withRefresh(
+      (name: string) => configApi.deletePattern(name),
+      'Failed to delete pattern'
+    ),
+    updatePool: withRefresh(
+      (poolName: keyof ReplacementPoolsConfig, values: string[]) => configApi.updatePool(poolName, values),
+      'Failed to update pool'
+    ),
+    updatePlaceholders: withConfigUpdate(
+      (placeholders: Record<string, string>) => configApi.updateConfig({ placeholders }),
+      'Failed to update placeholders'
+    ),
+    updateOcr: withConfigUpdate(
+      (ocr: ServerConfig['ocr']) => configApi.updateConfig({ ocr }),
+      'Failed to update OCR settings'
+    ),
+    updateDefaultReplacements: withConfigUpdate(
+      (replacements: Record<string, string>) => configApi.updateConfig({ default_replacements: replacements }),
+      'Failed to update default replacements'
+    ),
+    createCategory: withRefresh(
+      (name: string, words: string[] = []) => configApi.createCategory(name, words),
+      'Failed to create category'
+    ),
+    updateCategory: withRefresh(
+      (name: string, words: string[]) => configApi.updateCategory(name, words),
+      'Failed to update category'
+    ),
+    deleteCategory: withRefresh(
+      (name: string) => configApi.deleteCategory(name),
+      'Failed to delete category'
+    ),
+    addWordToCategory: withRefresh(
+      (category: string, word: string) => configApi.addWordToCategory(category, word),
+      'Failed to add word'
+    ),
+    removeWordFromCategory: withRefresh(
+      (category: string, word: string) => configApi.removeWordFromCategory(category, word),
+      'Failed to remove word'
+    ),
+    toggleCategory: withRefresh(
+      (name: string) => configApi.toggleCategory(name),
+      'Failed to toggle category'
+    ),
+  }), [withConfigUpdate, withRefresh]);
 
   return {
     config,
     loading,
     error,
     refresh,
-    updatePatterns,
-    addPattern,
-    updatePattern,
-    deletePattern,
-    updatePool,
-    updatePlaceholders,
-    updateOcr,
-    updateDefaultReplacements,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    addWordToCategory,
-    removeWordFromCategory,
-    toggleCategory,
+    ...actions,
   };
 }
