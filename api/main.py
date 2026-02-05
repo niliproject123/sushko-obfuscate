@@ -9,8 +9,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from api.routes.extract import router as extract_router
 from api.routes.config import router as config_router
 
-# Static files directory (built frontend in production)
-STATIC_DIR = Path("/app/static")
+# Static files directory (built frontend in production, or bundled in desktop mode)
+STATIC_DIR = Path(os.environ.get("STATIC_DIR", "/app/static"))
 INDEX_HTML = STATIC_DIR / "index.html"
 
 app = FastAPI(

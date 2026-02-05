@@ -9,11 +9,12 @@ import { useUserConfig } from './hooks/useUserConfig';
 import { useAdminConfig } from './hooks/useAdminConfig';
 import { useFileProcessor } from './hooks/useFileProcessor';
 import { useTextProcessor } from './hooks/useTextProcessor';
+import { isLocal } from './utils/environment';
 import './App.css';
 
 const CONFIG_TABS: Tab[] = [
-  { id: 'user', label: 'הגדרות משתמש' },
-  { id: 'admin', label: 'הגדרות מנהל' },
+  { id: 'user', label: 'החלפות טקסט' },
+  { id: 'admin', label: 'כללי זיהוי' },
 ];
 
 const INPUT_TABS: Tab[] = [
@@ -27,7 +28,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('user');
   const [inputMode, setInputMode] = useState<'pdf' | 'text'>('pdf');
   const [showConfig, setShowConfig] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(isLocal());
   const [passwordInput, setPasswordInput] = useState('');
 
   // User config (localStorage)
@@ -93,8 +94,21 @@ function App() {
   return (
     <div className="app" dir="rtl">
       <header className="header">
-        <h1>סושקו - מחלץ טקסט מ-PDF</h1>
-        <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
+        <div className="header-row">
+          <div>
+            <h1>סושקו - מחלץ טקסט מ-PDF</h1>
+            <p>חילוץ טקסט מקבצי PDF והסתרת מידע אישי מזהה</p>
+          </div>
+          {!isLocal() && (
+            <a
+              href="https://github.com/niliproject123/sushko-obfuscate/releases/latest/download/sushko-windows.zip"
+              className="btn btn-download"
+              download
+            >
+              ⬇ הורד גרסת מחשב
+            </a>
+          )}
+        </div>
       </header>
 
       <main className="main">
@@ -131,12 +145,7 @@ function App() {
               <Tabs
                 tabs={CONFIG_TABS}
                 activeTab={activeTab}
-                onTabChange={(id) => {
-                  if (id === 'admin' && !adminUnlocked) {
-                    return; // Don't switch until unlocked
-                  }
-                  setActiveTab(id);
-                }}
+                onTabChange={(id) => setActiveTab(id)}
               />
 
               {activeTab === 'user' && (
@@ -151,7 +160,7 @@ function App() {
 
               {activeTab === 'admin' && !adminUnlocked && (
                 <div className="admin-password-form">
-                  <p>נדרשת סיסמה לגישה להגדרות מנהל</p>
+                  <p>נדרשת סיסמה לגישה לכללי זיהוי</p>
                   <div className="password-input-row">
                     <input
                       type="password"

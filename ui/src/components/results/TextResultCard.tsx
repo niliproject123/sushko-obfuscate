@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import type { TextProcessingResult } from '../../types';
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import './TextResultCard.css';
 
 interface TextResultCardProps {
@@ -7,8 +7,8 @@ interface TextResultCardProps {
 }
 
 export function TextResultCard({ result }: TextResultCardProps) {
-  const [copiedMappings, setCopiedMappings] = useState(false);
-  const [copiedText, setCopiedText] = useState(false);
+  const { copied: copiedMappings, copy: copyMappings } = useCopyToClipboard();
+  const { copied: copiedText, copy: copyText } = useCopyToClipboard();
 
   const handleCopyMappings = async () => {
     if (!result.response) return;
@@ -31,25 +31,12 @@ export function TextResultCard({ result }: TextResultCardProps) {
       });
     }
 
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedMappings(true);
-      setTimeout(() => setCopiedMappings(false), 2000);
-    } catch (err) {
-      console.error('Copy failed:', err);
-    }
+    await copyMappings(text);
   };
 
   const handleCopyText = async () => {
     if (!result.response?.obfuscated_text) return;
-
-    try {
-      await navigator.clipboard.writeText(result.response.obfuscated_text);
-      setCopiedText(true);
-      setTimeout(() => setCopiedText(false), 2000);
-    } catch (err) {
-      console.error('Copy failed:', err);
-    }
+    await copyText(result.response.obfuscated_text);
   };
 
   if (result.status === 'processing') {

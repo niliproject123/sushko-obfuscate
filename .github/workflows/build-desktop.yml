@@ -1,0 +1,84 @@
+name: Build Desktop App
+
+on:
+  push:
+    branches: [main, 'claude/add-download-exe-button-BYmom']
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Tesseract OCR
+        run: |
+          choco install tesseract -y
+          # Add to PATH for pytesseract
+          echo "C:\Program Files\Tesseract-OCR" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Install Poppler (for pdf2image)
+        run: |
+          choco install poppler -y
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build frontend
+        run: |
+          cd ui
+          npm install
+          npm run build
+
+      - name: Copy frontend build to static/
+        run: |
+          mkdir static
+          xcopy /E /I ui\dist\* static\
+
+      - name: Copy Tesseract into bundle
+        run: |
+          xcopy /E /I "C:\Program Files\Tesseract-OCR" tesseract_ocr\
+
+      - name: Build exe with PyInstaller
+        run: |
+          pyinstaller desktop/sushko.spec
+
+      - name: Bundle Tesseract alongside exe
+        run: |
+          xcopy /E /I tesseract_ocr dist\sushko\tesseract_ocr\
+
+      - name: Create zip archive
+        run: |
+          Compress-Archive -Path dist\sushko\* -DestinationPath sushko-windows.zip
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Desktop Build
+          body: |
+            Automatically built desktop version of Sushko.
+
+            **How to use:**
+            1. Download and extract `sushko-windows.zip`
+            2. Run `sushko.exe`
+            3. The app will open in your browser automatically
+
+            **Note:** Windows SmartScreen may warn on first run — click "More info" → "Run anyway".
+          files: sushko-windows.zip
+          make_latest: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -70,6 +70,20 @@ def create_obfuscation_components(merged_config: MergedConfig) -> tuple[Replacem
     return mapper, obfuscator
 
 
+def _add_non_overlapping_matches(
+    existing_matches: list[PIIMatch],
+    new_matches: list[PIIMatch],
+) -> None:
+    """Add matches that don't overlap with existing ones (modifies existing_matches in place)."""
+    for new_match in new_matches:
+        overlaps = any(
+            (new_match.start < existing.end and new_match.end > existing.start)
+            for existing in existing_matches
+        )
+        if not overlaps:
+            existing_matches.append(new_match)
+
+
 def detect_pii(
     text: str,
     regex_detector: RegexDetector,
@@ -87,24 +101,10 @@ def detect_pii(
     # Category-based detection (e.g., military units)
     if category_detector:
         category_matches = category_detector.detect(text)
-        for new_match in category_matches:
-            overlaps = any(
-                (new_match.start < existing.end and new_match.end > existing.start)
-                for existing in all_matches
-            )
-            if not overlaps:
-                all_matches.append(new_match)
+        _add_non_overlapping_matches(all_matches, category_matches)
 
     # Pattern-based detection
     pattern_matches = regex_detector.detect(text)
-
-    # Filter out matches that overlap with existing matches
-    for new_match in pattern_matches:
-        overlaps = any(
-            (new_match.start < existing.end and new_match.end > existing.start)
-            for existing in all_matches
-        )
-        if not overlaps:
-            all_matches.append(new_match)
+    _add_non_overlapping_matches(all_matches, pattern_matches)
 
     return all_matches

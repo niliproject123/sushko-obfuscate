@@ -20,10 +20,14 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Build frontend
-COPY ui/ /app/ui/
+# Install frontend dependencies (cached unless package.json changes)
+COPY ui/package.json ui/package-lock.json* /app/ui/
 WORKDIR /app/ui
-RUN npm install && npm run build
+RUN npm install
+
+# Build frontend (only reruns when source files change)
+COPY ui/ /app/ui/
+RUN npm run build
 
 # Copy backend
 WORKDIR /app
