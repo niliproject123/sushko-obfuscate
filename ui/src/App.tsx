@@ -13,8 +13,8 @@ import { isLocal } from './utils/environment';
 import './App.css';
 
 const CONFIG_TABS: Tab[] = [
-  { id: 'user', label: 'הגדרות משתמש' },
-  { id: 'admin', label: 'הגדרות שרת' },
+  { id: 'user', label: 'החלפות טקסט' },
+  { id: 'admin', label: 'כללי זיהוי' },
 ];
 
 const INPUT_TABS: Tab[] = [
@@ -160,7 +160,7 @@ function App() {
 
               {activeTab === 'admin' && !adminUnlocked && (
                 <div className="admin-password-form">
-                  <p>נדרשת סיסמה לגישה להגדרות מנהל</p>
+                  <p>נדרשת סיסמה לגישה לכללי זיהוי</p>
                   <div className="password-input-row">
                     <input
                       type="password"
